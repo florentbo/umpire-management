@@ -1,92 +1,60 @@
-import * as React from 'react';
-import * as RadioGroupPrimitive from '@radix-ui/react-radio-group';
-import { Circle } from 'lucide-react';
+import React from 'react';
 import { cn } from '@/lib/utils';
 
-const RadioGroup = React.forwardRef<
-  React.ElementRef<typeof RadioGroupPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
->(({ className, ...props }, ref) => {
-  return (
-    <RadioGroupPrimitive.Root
-      className={cn('grid gap-2', className)}
-      {...props}
-      ref={ref}
-    />
-  );
-});
-RadioGroup.displayName = RadioGroupPrimitive.Root.displayName;
-
-const RadioGroupItem = React.forwardRef<
-  React.ElementRef<typeof RadioGroupPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
->(({ className, ...props }, ref) => {
-  return (
-    <RadioGroupPrimitive.Item
-      ref={ref}
-      className={cn(
-        'aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-        className
-      )}
-      {...props}
-    >
-      <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
-        <Circle className="h-2.5 w-2.5 fill-current text-current" />
-      </RadioGroupPrimitive.Indicator>
-    </RadioGroupPrimitive.Item>
-  );
-});
-RadioGroupItem.displayName = RadioGroupPrimitive.Item.displayName;
-
-interface RadioGroupCustomProps {
-  options: Array<{
-    value: string;
-    label: string;
-    score: number;
-  }>;
-  value?: string;
-  onValueChange: (value: string) => void;
+interface RadioOption {
+  value: string;
+  label: string;
+  score: number;
 }
 
-export function RadioGroupCustom({ options, value, onValueChange }: RadioGroupCustomProps) {
-  const getOptionColor = (optionValue: string) => {
-    switch (optionValue) {
-      case 'NOT_OK':
-        return 'text-red-600 border-red-300 hover:border-red-400';
-      case 'OK':
-        return 'text-green-600 border-green-300 hover:border-green-400';
-      case 'PARTIALLY_OK':
-        return 'text-yellow-600 border-yellow-300 hover:border-yellow-400';
-      case 'TO_BE_DONE':
-        return 'text-blue-600 border-blue-300 hover:border-blue-400';
-      default:
-        return 'text-gray-600 border-gray-300 hover:border-gray-400';
-    }
-  };
+interface RadioGroupCustomProps {
+  options: RadioOption[];
+  value?: string;
+  onValueChange: (value: string) => void;
+  className?: string;
+}
 
+export function RadioGroupCustom({ options, value, onValueChange, className }: RadioGroupCustomProps) {
   return (
-    <RadioGroup value={value} onValueChange={onValueChange} className="flex flex-wrap gap-3">
+    <div className={cn("space-y-2", className)}>
       {options.map((option) => (
-        <div key={option.value} className="flex items-center space-x-2">
-          <RadioGroupItem
+        <label
+          key={option.value}
+          className={cn(
+            "flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+            value === option.value
+              ? "border-blue-500 bg-blue-50"
+              : "border-gray-200 hover:border-gray-300"
+          )}
+        >
+          <input
+            type="radio"
             value={option.value}
-            id={option.value}
-            className={cn(
-              'transition-colors duration-200',
-              getOptionColor(option.value)
-            )}
+            checked={value === option.value}
+            onChange={(e) => onValueChange(e.target.value)}
+            className="sr-only"
           />
-          <label
-            htmlFor={option.value}
+          <div
             className={cn(
-              'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer transition-colors duration-200',
-              getOptionColor(option.value)
+              "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+              value === option.value
+                ? "border-blue-500 bg-blue-500"
+                : "border-gray-300"
             )}
           >
-            {option.label} ({option.score > 0 ? '+' : ''}{option.score})
-          </label>
-        </div>
+            {value === option.value && (
+              <div className="w-2 h-2 rounded-full bg-white" />
+            )}
+          </div>
+          <span className="flex-1 text-sm font-medium">{option.label}</span>
+          <span className={cn(
+            "text-sm font-bold px-2 py-1 rounded",
+            option.score >= 0 ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"
+          )}>
+            {option.score > 0 ? '+' : ''}{option.score}
+          </span>
+        </label>
       ))}
-    </RadioGroup>
+    </div>
   );
 }
