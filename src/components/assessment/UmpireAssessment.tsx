@@ -86,8 +86,8 @@ export function UmpireAssessment({
   const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border">
+    <div className="space-y-6 w-full">
+      <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border w-full">
         <h3 className="font-bold text-lg text-gray-800">{umpireName}</h3>
         <p className="text-sm text-gray-600 mt-1">
           {t('common:labels.totalScore')}: 

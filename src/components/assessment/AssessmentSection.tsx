@@ -47,18 +47,19 @@ export function AssessmentSection({
       </CardHeader>
       <CardContent className="space-y-6">
         {criteria.map((criterion) => (
-          <div key={criterion.id} className="space-y-3">
+          <div key={criterion.id} className="space-y-3 w-full">
             <h4 className="font-medium text-sm text-gray-700">{criterion.label}</h4>
             <RadioGroupCustom
               options={criterion.options}
               value={criterion.value}
               onValueChange={criterion.onValueChange}
+              className="w-full"
             />
           </div>
         ))}
         
         {hasRemarks && (
-          <div className="space-y-3 pt-4 border-t border-gray-100">
+          <div className="space-y-3 pt-4 border-t border-gray-100 w-full">
             <Label htmlFor={`remarks-${title.toLowerCase().replace(/\s+/g, '-')}`} className="font-medium text-sm text-gray-700">
               {t('labels.remarks')}
             </Label>
@@ -67,7 +68,7 @@ export function AssessmentSection({
               placeholder={t('labels.remarksPlaceholder')}
               value={remarks}
               onChange={(e) => onRemarksChange?.(e.target.value)}
-              className="min-h-[80px] resize-none"
+              className="min-h-[80px] resize-none w-full"
             />
           </div>
         )}

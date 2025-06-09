@@ -126,12 +126,12 @@ function AssessmentPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen w-full bg-gray-50">
         <Header title={t('common:status.loading')} />
-        <div className="p-4">
-          <div className="animate-pulse space-y-4">
-            <div className="h-32 bg-gray-200 rounded"></div>
-            <div className="h-96 bg-gray-200 rounded"></div>
+        <div className="w-full px-4 py-6 lg:px-8 xl:px-12">
+          <div className="animate-pulse space-y-6 w-full">
+            <div className="h-32 bg-gray-200 rounded-lg w-full"></div>
+            <div className="h-96 bg-gray-200 rounded-lg w-full"></div>
           </div>
         </div>
       </div>
@@ -140,9 +140,9 @@ function AssessmentPage() {
 
   if (!match) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen w-full bg-gray-50">
         <Header title={t('dashboard:match.info.notFound')} />
-        <div className="p-4 text-center">
+        <div className="w-full px-4 py-6 text-center">
           <p className="text-gray-500">{t('dashboard:match.info.notFoundDescription')}</p>
           <Button onClick={() => router.navigate({ to: '/manager/dashboard' })} className="mt-4">
             {t('dashboard:match.info.backToDashboard')}
@@ -155,99 +155,109 @@ function AssessmentPage() {
   const formValid = isFormValid();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen w-full bg-gray-50">
       <Header title={t('titles.matchAssessment')} />
       
-      <div className="p-4 space-y-6">
-        {/* Match Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{match.homeTeam} vs {match.awayTeam}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium">{t('dashboard:match.details.division')}:</span> {match.division}
-              </div>
-              <div>
-                <span className="font-medium">{t('dashboard:match.details.date')}:</span> {format(new Date(match.date), 'MMM d, yyyy')}
-              </div>
-              <div>
-                <span className="font-medium">{t('dashboard:match.details.time')}:</span> {match.time}
-              </div>
-              <div>
-                <span className="font-medium">{t('dashboard:match.details.umpires')}:</span> {match.umpireA}, {match.umpireB}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Validation Warning */}
-        {!formValid && (
-          <Card className="border-orange-200 bg-orange-50">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2 text-orange-700">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-sm">Veuillez remplir tous les critères pour pouvoir sauvegarder l'évaluation.</span>
+      <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
+        <div className="w-full max-w-none space-y-8">
+          {/* Match Info */}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="text-xl">{match.homeTeam} vs {match.awayTeam}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="font-medium">{t('dashboard:match.details.division')}:</span> 
+                  <div className="text-gray-600">{match.division}</div>
+                </div>
+                <div>
+                  <span className="font-medium">{t('dashboard:match.details.date')}:</span> 
+                  <div className="text-gray-600">{format(new Date(match.date), 'MMM d, yyyy')}</div>
+                </div>
+                <div>
+                  <span className="font-medium">{t('dashboard:match.details.time')}:</span> 
+                  <div className="text-gray-600">{match.time}</div>
+                </div>
+                <div>
+                  <span className="font-medium">{t('dashboard:match.details.umpires')}:</span> 
+                  <div className="text-gray-600">{match.umpireA}, {match.umpireB}</div>
+                </div>
               </div>
             </CardContent>
           </Card>
-        )}
 
-        {/* Controls */}
-        <div className="flex flex-wrap gap-3 justify-between items-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsVerticalView(!isVerticalView)}
-            className="flex items-center space-x-2"
-          >
-            {isVerticalView ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
-            <span>{isVerticalView ? t('layout.verticalView') : t('layout.sideBySide')}</span>
-          </Button>
-          
-          <div className="flex space-x-2">
-            <Button variant="outline" size="sm" onClick={handleReset}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              {t('common:buttons.reset')}
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={handleSave} 
-              disabled={saveAssessmentMutation.isPending || !formValid}
-              className={!formValid ? 'opacity-50 cursor-not-allowed' : ''}
+          {/* Validation Warning */}
+          {!formValid && (
+            <Card className="border-orange-200 bg-orange-50 w-full">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2 text-orange-700">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="text-sm">Veuillez remplir tous les critères pour pouvoir sauvegarder l'évaluation.</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Controls */}
+          <div className="flex flex-wrap gap-4 justify-between items-center w-full">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsVerticalView(!isVerticalView)}
+              className="flex items-center space-x-2"
             >
-              <Save className="h-4 w-4 mr-2" />
-              {saveAssessmentMutation.isPending ? t('common:buttons.saving') : t('common:buttons.save')}
+              {isVerticalView ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+              <span>{isVerticalView ? t('layout.verticalView') : t('layout.sideBySide')}</span>
             </Button>
+            
+            <div className="flex space-x-3">
+              <Button variant="outline" size="sm" onClick={handleReset}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                {t('common:buttons.reset')}
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={handleSave} 
+                disabled={saveAssessmentMutation.isPending || !formValid}
+                className={!formValid ? 'opacity-50 cursor-not-allowed' : ''}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {saveAssessmentMutation.isPending ? t('common:buttons.saving') : t('common:buttons.save')}
+              </Button>
+            </div>
           </div>
-        </div>
 
-        {/* Assessment Grid - No Max Width */}
-        <div className={`grid gap-6 ${isVerticalView ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
-          <UmpireAssessment
-            umpireName={`Arbitre A: ${match.umpireA}`}
-            scores={umpireAScores}
-            onScoreChange={(field, value) => 
-              setUmpireAScores(prev => ({ ...prev, [field]: value }))
-            }
-            selectedValues={umpireAValues}
-            onValueChange={(field, value) => 
-              setUmpireAValues(prev => ({ ...prev, [field]: value }))
-            }
-          />
-          
-          <UmpireAssessment
-            umpireName={`Arbitre B: ${match.umpireB}`}
-            scores={umpireBScores}
-            onScoreChange={(field, value) => 
-              setUmpireBScores(prev => ({ ...prev, [field]: value }))
-            }
-            selectedValues={umpireBValues}
-            onValueChange={(field, value) => 
-              setUmpireBValues(prev => ({ ...prev, [field]: value }))
-            }
-          />
+          {/* Assessment Grid - Full Width */}
+          <div className={`w-full ${isVerticalView ? 'space-y-8' : 'grid gap-8 grid-cols-1 xl:grid-cols-2'}`}>
+            <div className="w-full">
+              <UmpireAssessment
+                umpireName={`Arbitre A: ${match.umpireA}`}
+                scores={umpireAScores}
+                onScoreChange={(field, value) => 
+                  setUmpireAScores(prev => ({ ...prev, [field]: value }))
+                }
+                selectedValues={umpireAValues}
+                onValueChange={(field, value) => 
+                  setUmpireAValues(prev => ({ ...prev, [field]: value }))
+                }
+              />
+            </div>
+            
+            <div className="w-full">
+              <UmpireAssessment
+                umpireName={`Arbitre B: ${match.umpireB}`}
+                scores={umpireBScores}
+                onScoreChange={(field, value) => 
+                  setUmpireBScores(prev => ({ ...prev, [field]: value }))
+                }
+                selectedValues={umpireBValues}
+                onValueChange={(field, value) => 
+                  setUmpireBValues(prev => ({ ...prev, [field]: value }))
+                }
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
