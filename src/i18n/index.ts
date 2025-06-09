@@ -36,13 +36,15 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'fr', // Changed from 'en' to 'fr'
+    fallbackLng: 'fr', // French as default fallback
+    lng: 'fr', // Force French as initial language
     debug: false,
     
-    // Language detection options
+    // Language detection options - prioritize French
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng',
     },
 
     interpolation: {
