@@ -1,6 +1,7 @@
-import { AssessmentCriteria, OptionValue } from '@/types';
+import { AssessmentCriteria } from '@/types';
 import { AssessmentSection } from './AssessmentSection';
-import { assessmentConfig, getSectionMaxScore, getLocalizedText, currentLanguage } from '@/config/assessmentConfig';
+import { assessmentConfig, getSectionMaxScore } from '@/config/assessmentConfig';
+import { useTranslation } from 'react-i18next';
 
 interface UmpireAssessmentProps {
   umpireName: string;
@@ -9,6 +10,8 @@ interface UmpireAssessmentProps {
 }
 
 export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAssessmentProps) {
+  const { t } = useTranslation(['common', 'assessment']);
+
   // Map legacy field names to config criterion IDs
   const fieldMapping = {
     arrivalTime: 'arrival-time',
@@ -51,10 +54,10 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
 
       return {
         id: criterion.id,
-        label: getLocalizedText(criterion.label, currentLanguage),
+        label: t(`assessment:sections.${sectionConfig.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase())}.criteria.${criterion.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase())}.label`),
         options: criterion.options.map(opt => ({
           value: opt.value,
-          label: getLocalizedText(opt.label, currentLanguage),
+          label: t(`common:optionValues.${opt.value}`),
           score: opt.points, // AssessmentSection expects 'score' property
         })),
         value: getValueFromScore(criterion.id, scores[legacyField]),
@@ -75,7 +78,7 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
     const maxScore = getSectionMaxScore(sectionConfig.id);
 
     return {
-      title: getLocalizedText(sectionConfig.title, currentLanguage),
+      title: t(`assessment:sections.${sectionConfig.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase())}.title`),
       criteria: criteria.filter(Boolean),
       maxScore,
       currentScore,
@@ -90,7 +93,7 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
       <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border">
         <h3 className="font-bold text-lg text-gray-800">{umpireName}</h3>
         <p className="text-sm text-gray-600 mt-1">
-          {currentLanguage === 'fr' ? 'Score Total' : 'Total Score'}: 
+          {t('common:labels.totalScore')}: 
           <span className="font-bold text-blue-600"> {totalScore}/6</span>
         </p>
       </div>

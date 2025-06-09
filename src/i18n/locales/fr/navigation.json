@@ -1,0 +1,18 @@
+{
+  "menu": {
+    "dashboard": "Tableau de Bord",
+    "assessments": "Évaluations",
+    "reports": "Rapports",
+    "matches": "Matchs",
+    "settings": "Paramètres",
+    "profile": "Profil",
+    "help": "Aide"
+  },
+  "breadcrumbs": {
+    "home": "Accueil",
+    "dashboard": "Tableau de Bord",
+    "assessment": "Évaluation",
+    "match": "Match",
+    "reports": "Rapports"
+  }
+}

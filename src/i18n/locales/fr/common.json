@@ -1,0 +1,67 @@
+{
+  "buttons": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "reset": "Réinitialiser",
+    "submit": "Soumettre",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "close": "Fermer",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "loading": "Chargement...",
+    "saving": "Enregistrement...",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "logout": "Déconnexion"
+  },
+  "labels": {
+    "score": "Score",
+    "totalScore": "Score Total",
+    "maxScore": "Score Maximum",
+    "date": "Date",
+    "time": "Heure",
+    "division": "Division",
+    "umpires": "Arbitres",
+    "remarks": "Remarques supplémentaires",
+    "remarksPlaceholder": "Ajoutez des commentaires ou observations supplémentaires...",
+    "email": "Email",
+    "password": "Mot de passe",
+    "role": "Rôle",
+    "name": "Nom"
+  },
+  "messages": {
+    "success": {
+      "saved": "Enregistré avec succès !",
+      "updated": "Mis à jour avec succès !",
+      "deleted": "Supprimé avec succès !",
+      "reset": "Réinitialisé avec succès !"
+    },
+    "error": {
+      "generic": "Une erreur s'est produite",
+      "save": "Échec de l'enregistrement",
+      "load": "Échec du chargement",
+      "network": "Erreur réseau",
+      "unauthorized": "Accès non autorisé"
+    },
+    "validation": {
+      "required": "Ce champ est obligatoire",
+      "email": "Veuillez saisir un email valide",
+      "minLength": "Minimum {{count}} caractères requis"
+    }
+  },
+  "status": {
+    "loading": "Chargement...",
+    "noData": "Aucune donnée disponible",
+    "notFound": "Non trouvé",
+    "empty": "Aucun élément trouvé"
+  },
+  "optionValues": {
+    "NOT_OK": "Pas OK",
+    "OK": "OK",
+    "PARTIALLY_OK": "Partiellement OK",
+    "TO_BE_DONE": "À faire"
+  }
+}

@@ -183,14 +183,6 @@ export const assessmentConfig: AssessmentSection[] = [
   },
 ];
 
-// Current language (this would come from a context/store in a real app)
-export const currentLanguage: 'en' | 'fr' = 'en';
-
-// Helper function to get localized text
-export const getLocalizedText = (textObj: Record<'en' | 'fr', string>, language: 'en' | 'fr' = currentLanguage): string => {
-  return textObj[language] || textObj.en;
-};
-
 // Helper function to get max score for a section
 export const getSectionMaxScore = (sectionId: string): number => {
   const section = assessmentConfig.find(s => s.id === sectionId);

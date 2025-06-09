@@ -1,0 +1,61 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+// Import all translation files
+import commonEn from './locales/en/common.json';
+import commonFr from './locales/fr/common.json';
+import assessmentEn from './locales/en/assessment.json';
+import assessmentFr from './locales/fr/assessment.json';
+import authEn from './locales/en/auth.json';
+import authFr from './locales/fr/auth.json';
+import dashboardEn from './locales/en/dashboard.json';
+import dashboardFr from './locales/fr/dashboard.json';
+import navigationEn from './locales/en/navigation.json';
+import navigationFr from './locales/fr/navigation.json';
+
+const resources = {
+  en: {
+    common: commonEn,
+    assessment: assessmentEn,
+    auth: authEn,
+    dashboard: dashboardEn,
+    navigation: navigationEn,
+  },
+  fr: {
+    common: commonFr,
+    assessment: assessmentFr,
+    auth: authFr,
+    dashboard: dashboardFr,
+    navigation: navigationFr,
+  },
+};
+
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources,
+    fallbackLng: 'en',
+    debug: false,
+    
+    // Language detection options
+    detection: {
+      order: ['localStorage', 'navigator', 'htmlTag'],
+      caches: ['localStorage'],
+    },
+
+    interpolation: {
+      escapeValue: false, // React already escapes values
+    },
+
+    // Namespace configuration
+    defaultNS: 'common',
+    ns: ['common', 'assessment', 'auth', 'dashboard', 'navigation'],
+
+    // Return key if translation is missing
+    returnKeyIfEmpty: true,
+    returnEmptyString: false,
+  });
+
+export default i18n;

@@ -1,0 +1,67 @@
+{
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "reset": "Reset",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "logout": "Logout"
+  },
+  "labels": {
+    "score": "Score",
+    "totalScore": "Total Score",
+    "maxScore": "Max Score",
+    "date": "Date",
+    "time": "Time",
+    "division": "Division",
+    "umpires": "Umpires",
+    "remarks": "Additional Remarks",
+    "remarksPlaceholder": "Add any additional comments or observations...",
+    "email": "Email",
+    "password": "Password",
+    "role": "Role",
+    "name": "Name"
+  },
+  "messages": {
+    "success": {
+      "saved": "Successfully saved!",
+      "updated": "Successfully updated!",
+      "deleted": "Successfully deleted!",
+      "reset": "Successfully reset!"
+    },
+    "error": {
+      "generic": "An error occurred",
+      "save": "Failed to save",
+      "load": "Failed to load",
+      "network": "Network error",
+      "unauthorized": "Unauthorized access"
+    },
+    "validation": {
+      "required": "This field is required",
+      "email": "Please enter a valid email",
+      "minLength": "Minimum {{count}} characters required"
+    }
+  },
+  "status": {
+    "loading": "Loading...",
+    "noData": "No data available",
+    "notFound": "Not found",
+    "empty": "No items found"
+  },
+  "optionValues": {
+    "NOT_OK": "Not OK",
+    "OK": "OK",
+    "PARTIALLY_OK": "Partially OK",
+    "TO_BE_DONE": "To be done"
+  }
+}

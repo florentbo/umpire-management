@@ -1,0 +1,18 @@
+{
+  "menu": {
+    "dashboard": "Dashboard",
+    "assessments": "Assessments",
+    "reports": "Reports",
+    "matches": "Matches",
+    "settings": "Settings",
+    "profile": "Profile",
+    "help": "Help"
+  },
+  "breadcrumbs": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "assessment": "Assessment",
+    "match": "Match",
+    "reports": "Reports"
+  }
+}

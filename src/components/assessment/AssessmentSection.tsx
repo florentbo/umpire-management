@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroupCustom } from '@/components/ui/radio-group-custom';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { currentLanguage } from '@/config/assessmentConfig';
+import { useTranslation } from 'react-i18next';
 
 interface AssessmentSectionProps {
   title: string;
@@ -33,11 +33,7 @@ export function AssessmentSection({
   remarks = '',
   onRemarksChange 
 }: AssessmentSectionProps) {
-  const scoreLabel = currentLanguage === 'fr' ? 'Score' : 'Score';
-  const remarksLabel = currentLanguage === 'fr' ? 'Remarques supplémentaires' : 'Additional Remarks';
-  const remarksPlaceholder = currentLanguage === 'fr' 
-    ? 'Ajoutez des commentaires ou observations supplémentaires...'
-    : 'Add any additional comments or observations...';
+  const { t } = useTranslation('common');
 
   return (
     <Card className="w-full">
@@ -45,7 +41,7 @@ export function AssessmentSection({
         <CardTitle className="flex justify-between items-center text-lg">
           <span>{title}</span>
           <span className="text-sm font-normal">
-            {scoreLabel}: <span className="font-bold text-blue-600">{currentScore}/{maxScore}</span>
+            {t('labels.score')}: <span className="font-bold text-blue-600">{currentScore}/{maxScore}</span>
           </span>
         </CardTitle>
       </CardHeader>
@@ -64,11 +60,11 @@ export function AssessmentSection({
         {hasRemarks && (
           <div className="space-y-3 pt-4 border-t border-gray-100">
             <Label htmlFor={`remarks-${title.toLowerCase().replace(/\s+/g, '-')}`} className="font-medium text-sm text-gray-700">
-              {remarksLabel}
+              {t('labels.remarks')}
             </Label>
             <Textarea
               id={`remarks-${title.toLowerCase().replace(/\s+/g, '-')}`}
-              placeholder={remarksPlaceholder}
+              placeholder={t('labels.remarksPlaceholder')}
               value={remarks}
               onChange={(e) => onRemarksChange?.(e.target.value)}
               className="min-h-[80px] resize-none"

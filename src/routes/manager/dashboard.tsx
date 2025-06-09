@@ -7,6 +7,7 @@ import { apiService } from '@/lib/api';
 import { authService } from '@/lib/auth';
 import { format } from 'date-fns';
 import { Plus, FileText, Calendar, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/manager/dashboard')({
   beforeLoad: () => {
@@ -20,6 +21,7 @@ export const Route = createFileRoute('/manager/dashboard')({
 
 function ManagerDashboard() {
   const user = authService.getCurrentUser();
+  const { t } = useTranslation('dashboard');
   
   const { data: matches, isLoading: matchesLoading } = useQuery({
     queryKey: ['matches'],
@@ -33,7 +35,7 @@ function ManagerDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Manager Dashboard" />
+      <Header title={t('manager.title')} />
       
       <div className="p-4 space-y-6">
         {/* Quick Actions */}
@@ -41,7 +43,7 @@ function ManagerDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Plus className="h-5 w-5" />
-              <span>Quick Actions</span>
+              <span>{t('manager.quickActions.title')}</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -75,9 +77,9 @@ function ManagerDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <FileText className="h-5 w-5" />
-              <span>Recent Reports</span>
+              <span>{t('manager.recentReports.title')}</span>
             </CardTitle>
-            <CardDescription>Your recent assessments and reports from other managers</CardDescription>
+            <CardDescription>{t('manager.recentReports.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             {reportsLoading ? (
@@ -96,7 +98,7 @@ function ManagerDashboard() {
                           {report.match.homeTeam} vs {report.match.awayTeam}
                         </div>
                         <div className="text-xs text-gray-500">
-                          Assessed by {report.assessorName} • {format(new Date(report.createdAt), 'MMM d, yyyy')}
+                          {t('manager.recentReports.assessedBy', { name: report.assessorName })} • {format(new Date(report.createdAt), 'MMM d, yyyy')}
                         </div>
                       </div>
                       <div className="text-xs font-medium text-blue-600">
@@ -110,7 +112,7 @@ function ManagerDashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-4">No reports yet</p>
+              <p className="text-gray-500 text-center py-4">{t('manager.recentReports.noReports')}</p>
             )}
           </CardContent>
         </Card>
@@ -118,8 +120,8 @@ function ManagerDashboard() {
         {/* All Matches */}
         <Card>
           <CardHeader>
-            <CardTitle>All Matches</CardTitle>
-            <CardDescription>Select a match to start an assessment</CardDescription>
+            <CardTitle>{t('manager.allMatches.title')}</CardTitle>
+            <CardDescription>{t('manager.allMatches.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             {matchesLoading ? (
@@ -143,7 +145,7 @@ function ManagerDashboard() {
                             <div className="font-medium">{match.homeTeam} vs {match.awayTeam}</div>
                             <div className="text-sm text-gray-600">{match.division}</div>
                             <div className="text-sm text-gray-500 mt-1">
-                              Umpires: {match.umpireA}, {match.umpireB}
+                              {t('match.details.umpires')}: {match.umpireA}, {match.umpireB}
                             </div>
                           </div>
                           <div className="text-right text-sm text-gray-500">

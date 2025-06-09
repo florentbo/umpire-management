@@ -11,6 +11,7 @@ import { AssessmentCriteria } from '@/types';
 import { format } from 'date-fns';
 import { RotateCcw, Save, ToggleLeft, ToggleRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/manager/assessment/$matchId')({
   beforeLoad: () => {
@@ -26,6 +27,7 @@ function AssessmentPage() {
   const { matchId } = Route.useParams();
   const router = useRouter();
   const user = authService.getCurrentUser();
+  const { t } = useTranslation(['assessment', 'dashboard', 'common']);
   
   const [isVerticalView, setIsVerticalView] = useState(false);
   const [umpireAScores, setUmpireAScores] = useState<AssessmentCriteria>({
@@ -49,11 +51,11 @@ function AssessmentPage() {
   const saveAssessmentMutation = useMutation({
     mutationFn: apiService.saveAssessment,
     onSuccess: () => {
-      toast.success('Assessment saved successfully!');
+      toast.success(t('common:messages.success.saved'));
       router.navigate({ to: '/manager/dashboard' });
     },
     onError: () => {
-      toast.error('Failed to save assessment');
+      toast.error(t('common:messages.error.save'));
     },
   });
 
@@ -81,13 +83,13 @@ function AssessmentPage() {
       positioningPitch: 0,
       positioningD: 0,
     });
-    toast.success('Assessment reset');
+    toast.success(t('common:messages.success.reset'));
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Loading..." />
+        <Header title={t('common:status.loading')} />
         <div className="p-4">
           <div className="animate-pulse space-y-4">
             <div className="h-32 bg-gray-200 rounded"></div>
@@ -101,11 +103,11 @@ function AssessmentPage() {
   if (!match) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="Match Not Found" />
+        <Header title={t('dashboard:match.info.notFound')} />
         <div className="p-4 text-center">
-          <p className="text-gray-500">The requested match could not be found.</p>
+          <p className="text-gray-500">{t('dashboard:match.info.notFoundDescription')}</p>
           <Button onClick={() => router.navigate({ to: '/manager/dashboard' })} className="mt-4">
-            Back to Dashboard
+            {t('dashboard:match.info.backToDashboard')}
           </Button>
         </div>
       </div>
@@ -114,7 +116,7 @@ function AssessmentPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header title="Match Assessment" />
+      <Header title={t('titles.matchAssessment')} />
       
       <div className="p-4 space-y-6">
         {/* Match Info */}
@@ -125,16 +127,16 @@ function AssessmentPage() {
           <CardContent>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-medium">Division:</span> {match.division}
+                <span className="font-medium">{t('dashboard:match.details.division')}:</span> {match.division}
               </div>
               <div>
-                <span className="font-medium">Date:</span> {format(new Date(match.date), 'MMM d, yyyy')}
+                <span className="font-medium">{t('dashboard:match.details.date')}:</span> {format(new Date(match.date), 'MMM d, yyyy')}
               </div>
               <div>
-                <span className="font-medium">Time:</span> {match.time}
+                <span className="font-medium">{t('dashboard:match.details.time')}:</span> {match.time}
               </div>
               <div>
-                <span className="font-medium">Umpires:</span> {match.umpireA}, {match.umpireB}
+                <span className="font-medium">{t('dashboard:match.details.umpires')}:</span> {match.umpireA}, {match.umpireB}
               </div>
             </div>
           </CardContent>
@@ -149,17 +151,17 @@ function AssessmentPage() {
             className="flex items-center space-x-2"
           >
             {isVerticalView ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
-            <span>{isVerticalView ? 'Vertical' : 'Side by Side'}</span>
+            <span>{isVerticalView ? t('layout.verticalView') : t('layout.sideBySide')}</span>
           </Button>
           
           <div className="flex space-x-2">
             <Button variant="outline" size="sm" onClick={handleReset}>
               <RotateCcw className="h-4 w-4 mr-2" />
-              Reset
+              {t('common:buttons.reset')}
             </Button>
             <Button size="sm" onClick={handleSave} disabled={saveAssessmentMutation.isPending}>
               <Save className="h-4 w-4 mr-2" />
-              {saveAssessmentMutation.isPending ? 'Saving...' : 'Save'}
+              {saveAssessmentMutation.isPending ? t('common:buttons.saving') : t('common:buttons.save')}
             </Button>
           </div>
         </div>

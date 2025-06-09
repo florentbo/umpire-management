@@ -1,0 +1,59 @@
+{
+  "sections": {
+    "beforeAfterGame": {
+      "title": "Avant et Après le Match",
+      "criteria": {
+        "arrivalTime": {
+          "label": "Heure d'arrivée (Minimum 1 heure avant le match)",
+          "description": "L'arbitre doit arriver au moins 1 heure avant l'heure prévue du match"
+        },
+        "generalAppearance": {
+          "label": "Apparence générale (Polo, sifflet, cartons, etc.)",
+          "description": "Uniforme complet avec tout l'équipement requis"
+        }
+      }
+    },
+    "positioning": {
+      "title": "Positionnement",
+      "criteria": {
+        "positioningPitch": {
+          "label": "Positionnement sur le terrain",
+          "description": "Positionnement approprié pendant les différentes phases de jeu"
+        },
+        "positioningD": {
+          "label": "Positionnement dans le D",
+          "description": "Positionnement correct lorsque le jeu se déroule dans la surface de réparation"
+        }
+      }
+    },
+    "technicalSkills": {
+      "title": "Compétences techniques",
+      "criteria": {
+        "decisionMaking": {
+          "label": "Prise de décision",
+          "description": "Qualité et cohérence des décisions prises pendant le match"
+        },
+        "communication": {
+          "label": "Communication avec les joueurs",
+          "description": "Efficacité de la communication avec les joueurs et les entraîneurs"
+        }
+      }
+    }
+  },
+  "titles": {
+    "matchAssessment": "Évaluation du Match",
+    "umpireAssessment": "Évaluation de l'Arbitre",
+    "assessmentReport": "Rapport d'Évaluation"
+  },
+  "actions": {
+    "startAssessment": "Commencer l'Évaluation",
+    "saveAssessment": "Enregistrer l'Évaluation",
+    "resetAssessment": "Réinitialiser l'Évaluation",
+    "viewReport": "Voir le Rapport"
+  },
+  "layout": {
+    "verticalView": "Vue Verticale",
+    "sideBySide": "Côte à Côte",
+    "toggleView": "Basculer la Vue"
+  }
+}

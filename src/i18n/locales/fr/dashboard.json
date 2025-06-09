@@ -1,0 +1,56 @@
+{
+  "manager": {
+    "title": "Tableau de Bord Gestionnaire",
+    "quickActions": {
+      "title": "Actions Rapides",
+      "description": "Commencer les évaluations pour les matchs à venir"
+    },
+    "recentReports": {
+      "title": "Rapports Récents",
+      "description": "Vos évaluations récentes et rapports d'autres gestionnaires",
+      "noReports": "Aucun rapport pour le moment",
+      "assessedBy": "Évalué par {{name}}"
+    },
+    "allMatches": {
+      "title": "Tous les Matchs",
+      "description": "Sélectionnez un match pour commencer une évaluation"
+    }
+  },
+  "umpire": {
+    "title": "Mes Rapports",
+    "stats": {
+      "totalReports": "Total des Rapports",
+      "averageScore": "Score Moyen",
+      "lastAssessment": "Dernière Évaluation"
+    },
+    "reports": {
+      "title": "Rapports d'Évaluation",
+      "description": "Vos évaluations de performance par les gestionnaires d'arbitres",
+      "noReports": "Aucun rapport d'évaluation pour le moment",
+      "noReportsDescription": "Les rapports apparaîtront ici après que les gestionnaires évaluent votre performance",
+      "sections": {
+        "beforeAfter": "Avant et Après",
+        "positioning": "Positionnement"
+      },
+      "criteria": {
+        "arrival": "Arrivée",
+        "appearance": "Apparence",
+        "pitch": "Terrain",
+        "dArea": "Zone D"
+      }
+    }
+  },
+  "match": {
+    "info": {
+      "notFound": "Match Non Trouvé",
+      "notFoundDescription": "Le match demandé n'a pas pu être trouvé.",
+      "backToDashboard": "Retour au Tableau de Bord"
+    },
+    "details": {
+      "division": "Division",
+      "date": "Date",
+      "time": "Heure",
+      "umpires": "Arbitres"
+    }
+  }
+}

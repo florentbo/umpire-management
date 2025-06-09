@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { authService } from '@/lib/auth';
 import { Castle as Whistle } from 'lucide-react';
+import { LanguageSwitcher } from '@/components/ui/language-switcher';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -14,6 +16,7 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const router = useRouter();
+  const { t } = useTranslation('auth');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'umpire_manager' | 'umpire'>('umpire_manager');
@@ -41,55 +44,59 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
+      
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
             <Whistle className="h-8 w-8 text-white" />
           </div>
-          <CardTitle className="text-2xl font-bold">Umpire Assessment</CardTitle>
-          <CardDescription>Sign in to access your dashboard</CardDescription>
+          <CardTitle className="text-2xl font-bold">{t('titles.umpireAssessment')}</CardTitle>
+          <CardDescription>{t('titles.accessDashboard')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('fields.email.label')}</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="Enter your email"
+                placeholder={t('fields.email.placeholder')}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('fields.password.label')}</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="Enter your password"
+                placeholder={t('fields.password.placeholder')}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">{t('fields.role.label')}</Label>
               <Select value={role} onValueChange={(value: 'umpire_manager' | 'umpire') => setRole(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="umpire_manager">Umpire Manager</SelectItem>
-                  <SelectItem value="umpire">Umpire</SelectItem>
+                  <SelectItem value="umpire_manager">{t('fields.role.umpireManager')}</SelectItem>
+                  <SelectItem value="umpire">{t('fields.role.umpire')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? t('actions.signingIn') : t('actions.signIn')}
             </Button>
           </form>
         </CardContent>

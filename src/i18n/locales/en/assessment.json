@@ -1,0 +1,59 @@
+{
+  "sections": {
+    "beforeAfterGame": {
+      "title": "Before & After the Game",
+      "criteria": {
+        "arrivalTime": {
+          "label": "Arrival Time (Minimum 1 hour before game)",
+          "description": "Umpire must arrive at least 1 hour before the scheduled game time"
+        },
+        "generalAppearance": {
+          "label": "General Appearance (Polo, whistle, cards, etc.)",
+          "description": "Complete uniform with all required equipment"
+        }
+      }
+    },
+    "positioning": {
+      "title": "Positioning",
+      "criteria": {
+        "positioningPitch": {
+          "label": "Positioning on the Pitch",
+          "description": "Proper positioning during different phases of play"
+        },
+        "positioningD": {
+          "label": "Positioning in the D",
+          "description": "Correct positioning when play is in the penalty area"
+        }
+      }
+    },
+    "technicalSkills": {
+      "title": "Technical Skills",
+      "criteria": {
+        "decisionMaking": {
+          "label": "Decision Making",
+          "description": "Quality and consistency of decisions made during the match"
+        },
+        "communication": {
+          "label": "Communication with Players",
+          "description": "Effectiveness of communication with players and coaches"
+        }
+      }
+    }
+  },
+  "titles": {
+    "matchAssessment": "Match Assessment",
+    "umpireAssessment": "Umpire Assessment",
+    "assessmentReport": "Assessment Report"
+  },
+  "actions": {
+    "startAssessment": "Start Assessment",
+    "saveAssessment": "Save Assessment",
+    "resetAssessment": "Reset Assessment",
+    "viewReport": "View Report"
+  },
+  "layout": {
+    "verticalView": "Vertical View",
+    "sideBySide": "Side by Side",
+    "toggleView": "Toggle View"
+  }
+}

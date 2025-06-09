@@ -1,0 +1,56 @@
+{
+  "manager": {
+    "title": "Manager Dashboard",
+    "quickActions": {
+      "title": "Quick Actions",
+      "description": "Start assessments for upcoming matches"
+    },
+    "recentReports": {
+      "title": "Recent Reports",
+      "description": "Your recent assessments and reports from other managers",
+      "noReports": "No reports yet",
+      "assessedBy": "Assessed by {{name}}"
+    },
+    "allMatches": {
+      "title": "All Matches",
+      "description": "Select a match to start an assessment"
+    }
+  },
+  "umpire": {
+    "title": "My Reports",
+    "stats": {
+      "totalReports": "Total Reports",
+      "averageScore": "Average Score",
+      "lastAssessment": "Last Assessment"
+    },
+    "reports": {
+      "title": "Assessment Reports",
+      "description": "Your performance assessments from umpire managers",
+      "noReports": "No assessment reports yet",
+      "noReportsDescription": "Reports will appear here after managers assess your performance",
+      "sections": {
+        "beforeAfter": "Before & After",
+        "positioning": "Positioning"
+      },
+      "criteria": {
+        "arrival": "Arrival",
+        "appearance": "Appearance",
+        "pitch": "Pitch",
+        "dArea": "D Area"
+      }
+    }
+  },
+  "match": {
+    "info": {
+      "notFound": "Match Not Found",
+      "notFoundDescription": "The requested match could not be found.",
+      "backToDashboard": "Back to Dashboard"
+    },
+    "details": {
+      "division": "Division",
+      "date": "Date",
+      "time": "Time",
+      "umpires": "Umpires"
+    }
+  }
+}
