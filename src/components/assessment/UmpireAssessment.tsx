@@ -7,9 +7,17 @@ interface UmpireAssessmentProps {
   umpireName: string;
   scores: AssessmentCriteria;
   onScoreChange: (field: keyof AssessmentCriteria, value: number) => void;
+  selectedValues: Record<keyof AssessmentCriteria, string>;
+  onValueChange: (field: keyof AssessmentCriteria, value: string) => void;
 }
 
-export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAssessmentProps) {
+export function UmpireAssessment({ 
+  umpireName, 
+  scores, 
+  onScoreChange, 
+  selectedValues, 
+  onValueChange 
+}: UmpireAssessmentProps) {
   const { t } = useTranslation(['common', 'assessment']);
 
   // Map legacy field names to config criterion IDs
@@ -18,18 +26,6 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
     generalAppearance: 'general-appearance',
     positioningPitch: 'positioning-pitch',
     positioningD: 'positioning-d',
-  };
-
-  const getValueFromScore = (criterionId: string, score: number): string => {
-    // Find the criterion in config
-    for (const section of assessmentConfig) {
-      const criterion = section.criteria.find(c => c.id === criterionId);
-      if (criterion) {
-        const option = criterion.options.find(opt => opt.points === score);
-        return option?.value || '';
-      }
-    }
-    return '';
   };
 
   const getScoreFromValue = (criterionId: string, value: string): number => {
@@ -60,8 +56,9 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
           label: t(`common:optionValues.${opt.value}`),
           score: opt.points, // AssessmentSection expects 'score' property
         })),
-        value: getValueFromScore(criterion.id, scores[legacyField]),
+        value: selectedValues[legacyField] || '', // Use empty string if no value selected
         onValueChange: (value: string) => {
+          onValueChange(legacyField, value);
           const points = getScoreFromValue(criterion.id, value);
           onScoreChange(legacyField, points);
         },

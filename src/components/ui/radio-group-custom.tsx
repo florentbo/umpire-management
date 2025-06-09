@@ -1,60 +1,69 @@
-import React from 'react';
+import * as React from 'react';
+import * as RadioGroupPrimitive from '@radix-ui/react-radio-group';
+import { Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface RadioOption {
-  value: string;
-  label: string;
-  score: number;
-}
+const RadioGroup = React.forwardRef<
+  React.ElementRef<typeof RadioGroupPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
+>(({ className, ...props }, ref) => {
+  return (
+    <RadioGroupPrimitive.Root
+      className={cn('grid gap-2', className)}
+      {...props}
+      ref={ref}
+    />
+  );
+});
+RadioGroup.displayName = RadioGroupPrimitive.Root.displayName;
+
+const RadioGroupItem = React.forwardRef<
+  React.ElementRef<typeof RadioGroupPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
+>(({ className, ...props }, ref) => {
+  return (
+    <RadioGroupPrimitive.Item
+      ref={ref}
+      className={cn(
+        'aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        className
+      )}
+      {...props}
+    >
+      <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
+        <Circle className="h-2.5 w-2.5 fill-current text-current" />
+      </RadioGroupPrimitive.Indicator>
+    </RadioGroupPrimitive.Item>
+  );
+});
+RadioGroupItem.displayName = RadioGroupPrimitive.Item.displayName;
 
 interface RadioGroupCustomProps {
-  options: RadioOption[];
+  options: Array<{
+    value: string;
+    label: string;
+    score: number;
+  }>;
   value?: string;
   onValueChange: (value: string) => void;
-  className?: string;
 }
 
-export function RadioGroupCustom({ options, value, onValueChange, className }: RadioGroupCustomProps) {
+export function RadioGroupCustom({ options, value, onValueChange }: RadioGroupCustomProps) {
   return (
-    <div className={cn("space-y-2", className)}>
-      {options.map((option) => (
-        <label
-          key={option.value}
-          className={cn(
-            "flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
-            value === option.value
-              ? "border-blue-500 bg-blue-50"
-              : "border-gray-200 hover:border-gray-300"
-          )}
-        >
-          <input
-            type="radio"
-            value={option.value}
-            checked={value === option.value}
-            onChange={(e) => onValueChange(e.target.value)}
-            className="sr-only"
-          />
-          <div
-            className={cn(
-              "w-4 h-4 rounded-full border-2 flex items-center justify-center",
-              value === option.value
-                ? "border-blue-500 bg-blue-500"
-                : "border-gray-300"
-            )}
-          >
-            {value === option.value && (
-              <div className="w-2 h-2 rounded-full bg-white" />
-            )}
+    <RadioGroup value={value || ''} onValueChange={onValueChange}>
+      <div className="flex flex-wrap gap-4">
+        {options.map((option) => (
+          <div key={option.value} className="flex items-center space-x-2">
+            <RadioGroupItem value={option.value} id={option.value} />
+            <label
+              htmlFor={option.value}
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            >
+              {option.label} ({option.score > 0 ? '+' : ''}{option.score})
+            </label>
           </div>
-          <span className="flex-1 text-sm font-medium">{option.label}</span>
-          <span className={cn(
-            "text-sm font-bold px-2 py-1 rounded",
-            option.score >= 0 ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"
-          )}>
-            {option.score > 0 ? '+' : ''}{option.score}
-          </span>
-        </label>
-      ))}
-    </div>
+        ))}
+      </div>
+    </RadioGroup>
   );
 }
