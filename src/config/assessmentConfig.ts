@@ -1,88 +1,195 @@
-import { AssessmentSection, AssessmentCriteria } from '@/types';
+import { AssessmentSection, OptionValue } from '@/types';
 
 export const assessmentConfig: AssessmentSection[] = [
   {
     id: 'before-after-game',
-    title: 'Before & After the Game',
+    title: {
+      en: 'Before & After the Game',
+      fr: 'Avant et Après le Match'
+    },
     hasRemarks: true,
     criteria: [
       {
         id: 'arrival-time',
-        questionId: 'q1-arrival-time',
-        label: 'Arrival Time (Minimum 1 hour before game)',
+        questionId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        label: {
+          en: 'Arrival Time (Minimum 1 hour before game)',
+          fr: 'Heure d\'arrivée (Minimum 1 heure avant le match)'
+        },
         options: [
-          { value: 'not_ok', label: 'Not OK (Less than 1 hour)', points: -1 },
-          { value: 'ok', label: 'OK (1+ hour early)', points: 1 },
+          { 
+            value: OptionValue.NOT_OK, 
+            label: { en: 'Not OK', fr: 'Pas OK' }, 
+            points: -1 
+          },
+          { 
+            value: OptionValue.OK, 
+            label: { en: 'OK', fr: 'OK' }, 
+            points: 1 
+          },
         ],
       },
       {
         id: 'general-appearance',
-        questionId: 'q2-general-appearance',
-        label: 'General Appearance (Polo, whistle, cards, etc.)',
+        questionId: 'b2c3d4e5-f6g7-8901-bcde-f23456789012',
+        label: {
+          en: 'General Appearance (Polo, whistle, cards, etc.)',
+          fr: 'Apparence générale (Polo, sifflet, cartons, etc.)'
+        },
         options: [
-          { value: 'not_ok', label: 'Not OK (Missing items)', points: 0 },
-          { value: 'ok', label: 'OK (Complete uniform)', points: 1 },
+          { 
+            value: OptionValue.NOT_OK, 
+            label: { en: 'Not OK', fr: 'Pas OK' }, 
+            points: 0 
+          },
+          { 
+            value: OptionValue.OK, 
+            label: { en: 'OK', fr: 'OK' }, 
+            points: 1 
+          },
         ],
       },
     ],
   },
   {
     id: 'positioning',
-    title: 'Positioning',
+    title: {
+      en: 'Positioning',
+      fr: 'Positionnement'
+    },
     hasRemarks: true,
     criteria: [
       {
         id: 'positioning-pitch',
-        questionId: 'q3-positioning-pitch',
-        label: 'Positioning on the Pitch',
+        questionId: 'c3d4e5f6-g7h8-9012-cdef-345678901234',
+        label: {
+          en: 'Positioning on the Pitch',
+          fr: 'Positionnement sur le terrain'
+        },
         options: [
-          { value: 'not_ok', label: 'Not OK', points: 0 },
-          { value: 'partially_ok', label: 'Partially OK', points: 1 },
-          { value: 'ok', label: 'OK', points: 2 },
+          { 
+            value: OptionValue.NOT_OK, 
+            label: { en: 'Not OK', fr: 'Pas OK' }, 
+            points: 0 
+          },
+          { 
+            value: OptionValue.PARTIALLY_OK, 
+            label: { en: 'Partially OK', fr: 'Partiellement OK' }, 
+            points: 1 
+          },
+          { 
+            value: OptionValue.OK, 
+            label: { en: 'OK', fr: 'OK' }, 
+            points: 2 
+          },
         ],
       },
       {
         id: 'positioning-d',
-        questionId: 'q4-positioning-d',
-        label: 'Positioning in the D',
+        questionId: 'd4e5f6g7-h8i9-0123-defg-456789012345',
+        label: {
+          en: 'Positioning in the D',
+          fr: 'Positionnement dans le D'
+        },
         options: [
-          { value: 'not_ok', label: 'Not OK', points: 0 },
-          { value: 'partially_ok', label: 'Partially OK', points: 1 },
-          { value: 'ok', label: 'OK', points: 2 },
+          { 
+            value: OptionValue.NOT_OK, 
+            label: { en: 'Not OK', fr: 'Pas OK' }, 
+            points: 0 
+          },
+          { 
+            value: OptionValue.PARTIALLY_OK, 
+            label: { en: 'Partially OK', fr: 'Partiellement OK' }, 
+            points: 1 
+          },
+          { 
+            value: OptionValue.OK, 
+            label: { en: 'OK', fr: 'OK' }, 
+            points: 2 
+          },
         ],
       },
     ],
   },
   {
     id: 'technical-skills',
-    title: 'Technical Skills',
+    title: {
+      en: 'Technical Skills',
+      fr: 'Compétences techniques'
+    },
     hasRemarks: false,
     criteria: [
       {
         id: 'decision-making',
-        questionId: 'q5-decision-making',
-        label: 'Decision Making',
+        questionId: 'e5f6g7h8-i9j0-1234-efgh-567890123456',
+        label: {
+          en: 'Decision Making',
+          fr: 'Prise de décision'
+        },
         options: [
-          { value: 'poor', label: 'Poor', points: 0 },
-          { value: 'fair', label: 'Fair', points: 1 },
-          { value: 'good', label: 'Good', points: 2 },
-          { value: 'excellent', label: 'Excellent', points: 3 },
+          { 
+            value: OptionValue.NOT_OK, 
+            label: { en: 'Not OK', fr: 'Pas OK' }, 
+            points: 0 
+          },
+          { 
+            value: OptionValue.PARTIALLY_OK, 
+            label: { en: 'Partially OK', fr: 'Partiellement OK' }, 
+            points: 1 
+          },
+          { 
+            value: OptionValue.OK, 
+            label: { en: 'OK', fr: 'OK' }, 
+            points: 2 
+          },
+          { 
+            value: OptionValue.EXCELLENT, 
+            label: { en: 'Excellent', fr: 'Excellent' }, 
+            points: 3 
+          },
         ],
       },
       {
         id: 'communication',
-        questionId: 'q6-communication',
-        label: 'Communication with Players',
+        questionId: 'f6g7h8i9-j0k1-2345-fghi-678901234567',
+        label: {
+          en: 'Communication with Players',
+          fr: 'Communication avec les joueurs'
+        },
         options: [
-          { value: 'poor', label: 'Poor', points: 0 },
-          { value: 'fair', label: 'Fair', points: 1 },
-          { value: 'good', label: 'Good', points: 2 },
-          { value: 'excellent', label: 'Excellent', points: 3 },
+          { 
+            value: OptionValue.NOT_OK, 
+            label: { en: 'Not OK', fr: 'Pas OK' }, 
+            points: 0 
+          },
+          { 
+            value: OptionValue.PARTIALLY_OK, 
+            label: { en: 'Partially OK', fr: 'Partiellement OK' }, 
+            points: 1 
+          },
+          { 
+            value: OptionValue.OK, 
+            label: { en: 'OK', fr: 'OK' }, 
+            points: 2 
+          },
+          { 
+            value: OptionValue.EXCELLENT, 
+            label: { en: 'Excellent', fr: 'Excellent' }, 
+            points: 3 
+          },
         ],
       },
     ],
   },
 ];
+
+// Current language (this would come from a context/store in a real app)
+export const currentLanguage: 'en' | 'fr' = 'en';
+
+// Helper function to get localized text
+export const getLocalizedText = (textObj: Record<'en' | 'fr', string>, language: 'en' | 'fr' = currentLanguage): string => {
+  return textObj[language] || textObj.en;
+};
 
 // Helper function to get max score for a section
 export const getSectionMaxScore = (sectionId: string): number => {

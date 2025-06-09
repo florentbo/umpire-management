@@ -41,23 +41,34 @@ export interface Report {
   createdAt: string;
 }
 
+// Supported languages
+export type Language = 'en' | 'fr';
+
+// Standard option values enum
+export enum OptionValue {
+  NOT_OK = 'NOT_OK',
+  PARTIALLY_OK = 'PARTIALLY_OK', 
+  OK = 'OK',
+  EXCELLENT = 'EXCELLENT'
+}
+
 // New types for flexible assessment system
 export interface AssessmentOption {
-  value: string;
-  label: string;
+  value: OptionValue;
+  label: Record<Language, string>;
   points: number;
 }
 
 export interface AssessmentCriterion {
   id: string;
   questionId: string; // UUID for OpenAPI compatibility
-  label: string;
+  label: Record<Language, string>;
   options: AssessmentOption[];
 }
 
 export interface AssessmentSection {
   id: string;
-  title: string;
+  title: Record<Language, string>;
   hasRemarks: boolean;
   criteria: AssessmentCriterion[];
 }

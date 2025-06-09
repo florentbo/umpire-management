@@ -1,6 +1,6 @@
-import { AssessmentCriteria } from '@/types';
+import { AssessmentCriteria, OptionValue } from '@/types';
 import { AssessmentSection } from './AssessmentSection';
-import { assessmentConfig, getSectionMaxScore } from '@/config/assessmentConfig';
+import { assessmentConfig, getSectionMaxScore, getLocalizedText, currentLanguage } from '@/config/assessmentConfig';
 
 interface UmpireAssessmentProps {
   umpireName: string;
@@ -17,7 +17,7 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
     positioningD: 'positioning-d',
   };
 
-  const getValueFromScore = (criterionId: string, score: number) => {
+  const getValueFromScore = (criterionId: string, score: number): string => {
     // Find the criterion in config
     for (const section of assessmentConfig) {
       const criterion = section.criteria.find(c => c.id === criterionId);
@@ -29,7 +29,7 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
     return '';
   };
 
-  const getScoreFromValue = (criterionId: string, value: string) => {
+  const getScoreFromValue = (criterionId: string, value: string): number => {
     // Find the criterion in config
     for (const section of assessmentConfig) {
       const criterion = section.criteria.find(c => c.id === criterionId);
@@ -51,10 +51,10 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
 
       return {
         id: criterion.id,
-        label: criterion.label,
+        label: getLocalizedText(criterion.label, currentLanguage),
         options: criterion.options.map(opt => ({
           value: opt.value,
-          label: opt.label,
+          label: getLocalizedText(opt.label, currentLanguage),
           score: opt.points, // AssessmentSection expects 'score' property
         })),
         value: getValueFromScore(criterion.id, scores[legacyField]),
@@ -75,10 +75,11 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
     const maxScore = getSectionMaxScore(sectionConfig.id);
 
     return {
-      title: sectionConfig.title,
+      title: getLocalizedText(sectionConfig.title, currentLanguage),
       criteria: criteria.filter(Boolean),
       maxScore,
       currentScore,
+      hasRemarks: sectionConfig.hasRemarks,
     };
   });
 
@@ -88,7 +89,10 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
     <div className="space-y-6">
       <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border">
         <h3 className="font-bold text-lg text-gray-800">{umpireName}</h3>
-        <p className="text-sm text-gray-600 mt-1">Total Score: <span className="font-bold text-blue-600">{totalScore}/6</span></p>
+        <p className="text-sm text-gray-600 mt-1">
+          {currentLanguage === 'fr' ? 'Score Total' : 'Total Score'}: 
+          <span className="font-bold text-blue-600"> {totalScore}/6</span>
+        </p>
       </div>
       
       {sections.map((section, index) => (
@@ -98,6 +102,7 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
           criteria={section.criteria}
           maxScore={section.maxScore}
           currentScore={section.currentScore}
+          hasRemarks={section.hasRemarks}
         />
       ))}
     </div>
