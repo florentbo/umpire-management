@@ -1,83 +1,92 @@
-import React from 'react';
+import * as React from 'react';
+import * as RadioGroupPrimitive from '@radix-ui/react-radio-group';
+import { Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface RadioOption {
-  value: string;
-  label: string;
-  score: number;
-}
+const RadioGroup = React.forwardRef<
+  React.ElementRef<typeof RadioGroupPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
+>(({ className, ...props }, ref) => {
+  return (
+    <RadioGroupPrimitive.Root
+      className={cn('grid gap-2', className)}
+      {...props}
+      ref={ref}
+    />
+  );
+});
+RadioGroup.displayName = RadioGroupPrimitive.Root.displayName;
+
+const RadioGroupItem = React.forwardRef<
+  React.ElementRef<typeof RadioGroupPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
+>(({ className, ...props }, ref) => {
+  return (
+    <RadioGroupPrimitive.Item
+      ref={ref}
+      className={cn(
+        'aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        className
+      )}
+      {...props}
+    >
+      <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
+        <Circle className="h-2.5 w-2.5 fill-current text-current" />
+      </RadioGroupPrimitive.Indicator>
+    </RadioGroupPrimitive.Item>
+  );
+});
+RadioGroupItem.displayName = RadioGroupPrimitive.Item.displayName;
 
 interface RadioGroupCustomProps {
-  options: RadioOption[];
+  options: Array<{
+    value: string;
+    label: string;
+    score: number;
+  }>;
   value?: string;
   onValueChange: (value: string) => void;
-  className?: string;
 }
 
-export function RadioGroupCustom({ 
-  options, 
-  value, 
-  onValueChange, 
-  className 
-}: RadioGroupCustomProps) {
-  const getOptionColor = (optionValue: string, score: number) => {
-    if (optionValue === 'NOT_OK') {
-      return 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100';
+export function RadioGroupCustom({ options, value, onValueChange }: RadioGroupCustomProps) {
+  const getOptionColor = (optionValue: string) => {
+    switch (optionValue) {
+      case 'NOT_OK':
+        return 'text-red-600 border-red-300 hover:border-red-400';
+      case 'OK':
+        return 'text-green-600 border-green-300 hover:border-green-400';
+      case 'PARTIALLY_OK':
+        return 'text-yellow-600 border-yellow-300 hover:border-yellow-400';
+      case 'TO_BE_DONE':
+        return 'text-blue-600 border-blue-300 hover:border-blue-400';
+      default:
+        return 'text-gray-600 border-gray-300 hover:border-gray-400';
     }
-    if (optionValue === 'OK') {
-      return 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100';
-    }
-    if (optionValue === 'PARTIALLY_OK') {
-      return 'border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100';
-    }
-    if (optionValue === 'TO_BE_DONE') {
-      return 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100';
-    }
-    return 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100';
-  };
-
-  const getSelectedColor = (optionValue: string, score: number) => {
-    if (optionValue === 'NOT_OK') {
-      return 'border-red-500 bg-red-100 text-red-800 ring-2 ring-red-200';
-    }
-    if (optionValue === 'OK') {
-      return 'border-green-500 bg-green-100 text-green-800 ring-2 ring-green-200';
-    }
-    if (optionValue === 'PARTIALLY_OK') {
-      return 'border-yellow-500 bg-yellow-100 text-yellow-800 ring-2 ring-yellow-200';
-    }
-    if (optionValue === 'TO_BE_DONE') {
-      return 'border-blue-500 bg-blue-100 text-blue-800 ring-2 ring-blue-200';
-    }
-    return 'border-gray-500 bg-gray-100 text-gray-800 ring-2 ring-gray-200';
   };
 
   return (
-    <div className={cn("grid grid-cols-2 gap-2", className)}>
-      {options.map((option) => {
-        const isSelected = value === option.value;
-        const baseColors = getOptionColor(option.value, option.score);
-        const selectedColors = getSelectedColor(option.value, option.score);
-        
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onValueChange(option.value)}
+    <RadioGroup value={value} onValueChange={onValueChange} className="flex flex-wrap gap-3">
+      {options.map((option) => (
+        <div key={option.value} className="flex items-center space-x-2">
+          <RadioGroupItem
+            value={option.value}
+            id={option.value}
             className={cn(
-              "relative flex items-center justify-center p-3 text-sm font-medium rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2",
-              isSelected ? selectedColors : baseColors
+              'transition-colors duration-200',
+              getOptionColor(option.value)
+            )}
+          />
+          <label
+            htmlFor={option.value}
+            className={cn(
+              'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer transition-colors duration-200',
+              getOptionColor(option.value)
             )}
           >
-            <span className="text-center">
-              {option.label}
-              <span className="block text-xs opacity-75 mt-1">
-                ({option.score > 0 ? '+' : ''}{option.score} pt{Math.abs(option.score) !== 1 ? 's' : ''})
-              </span>
-            </span>
-          </button>
-        );
-      })}
-    </div>
+            {option.label} ({option.score > 0 ? '+' : ''}{option.score})
+          </label>
+        </div>
+      ))}
+    </RadioGroup>
   );
 }
