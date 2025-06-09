@@ -15,6 +15,13 @@ interface RadioGroupCustomProps {
 }
 
 export function RadioGroupCustom({ options, value, onValueChange, className }: RadioGroupCustomProps) {
+  const getScoreColor = (score: number, label: string) => {
+    if (label.toLowerCase().includes('partially') || label.toLowerCase().includes('partiellement')) {
+      return "text-yellow-600 bg-yellow-100";
+    }
+    return score >= 0 ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100";
+  };
+
   return (
     <div className={cn("space-y-2", className)}>
       {options.map((option) => (
@@ -49,7 +56,7 @@ export function RadioGroupCustom({ options, value, onValueChange, className }: R
           <span className="flex-1 text-sm font-medium">{option.label}</span>
           <span className={cn(
             "text-sm font-bold px-2 py-1 rounded",
-            option.score >= 0 ? "text-green-600 bg-green-100" : "text-red-600 bg-red-100"
+            getScoreColor(option.score, option.label)
           )}>
             {option.score > 0 ? '+' : ''}{option.score}
           </span>
