@@ -40,3 +40,38 @@ export interface Report {
   assessorName: string;
   createdAt: string;
 }
+
+// New types for flexible assessment system
+export interface AssessmentOption {
+  value: string;
+  label: string;
+  points: number;
+}
+
+export interface AssessmentCriterion {
+  id: string;
+  questionId: string; // UUID for OpenAPI compatibility
+  label: string;
+  options: AssessmentOption[];
+}
+
+export interface AssessmentSection {
+  id: string;
+  title: string;
+  hasRemarks: boolean;
+  criteria: AssessmentCriterion[];
+}
+
+export interface AssessmentResponse {
+  questionId: string;
+  bundle: string; // section id
+  responseType: string; // selected option value
+  points: number;
+  remarks?: string;
+}
+
+export interface FlexibleAssessmentData {
+  responses: AssessmentResponse[];
+  totalScore: number;
+  maxScore: number;
+}

@@ -1,5 +1,6 @@
 import { AssessmentCriteria } from '@/types';
 import { AssessmentSection } from './AssessmentSection';
+import { assessmentConfig, getSectionMaxScore } from '@/config/assessmentConfig';
 
 interface UmpireAssessmentProps {
   umpireName: string;
@@ -7,70 +8,81 @@ interface UmpireAssessmentProps {
   onScoreChange: (field: keyof AssessmentCriteria, value: number) => void;
 }
 
-const arrivalTimeOptions = [
-  { value: 'not_ok', label: 'Not OK (Less than 1 hour)', score: -1 },
-  { value: 'ok', label: 'OK (1+ hour early)', score: 1 },
-];
-
-const generalAppearanceOptions = [
-  { value: 'not_ok', label: 'Not OK (Missing items)', score: 0 },
-  { value: 'ok', label: 'OK (Complete uniform)', score: 1 },
-];
-
-const positioningOptions = [
-  { value: 'not_ok', label: 'Not OK', score: 0 },
-  { value: 'partially_ok', label: 'Partially OK', score: 1 },
-  { value: 'ok', label: 'OK', score: 2 },
-];
-
 export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAssessmentProps) {
-  const getValueFromScore = (options: any[], score: number) => {
-    const option = options.find(opt => opt.score === score);
-    return option?.value || '';
+  // Map legacy field names to config criterion IDs
+  const fieldMapping = {
+    arrivalTime: 'arrival-time',
+    generalAppearance: 'general-appearance',
+    positioningPitch: 'positioning-pitch',
+    positioningD: 'positioning-d',
   };
 
-  const getScoreFromValue = (options: any[], value: string) => {
-    const option = options.find(opt => opt.value === value);
-    return option?.score || 0;
+  const getValueFromScore = (criterionId: string, score: number) => {
+    // Find the criterion in config
+    for (const section of assessmentConfig) {
+      const criterion = section.criteria.find(c => c.id === criterionId);
+      if (criterion) {
+        const option = criterion.options.find(opt => opt.points === score);
+        return option?.value || '';
+      }
+    }
+    return '';
   };
 
-  const section1Criteria = [
-    {
-      id: 'arrivalTime',
-      label: 'Arrival Time (Minimum 1 hour before game)',
-      options: arrivalTimeOptions,
-      value: getValueFromScore(arrivalTimeOptions, scores.arrivalTime),
-      onValueChange: (value: string) => onScoreChange('arrivalTime', getScoreFromValue(arrivalTimeOptions, value)),
-    },
-    {
-      id: 'generalAppearance',
-      label: 'General Appearance (Polo, whistle, cards, etc.)',
-      options: generalAppearanceOptions,
-      value: getValueFromScore(generalAppearanceOptions, scores.generalAppearance),
-      onValueChange: (value: string) => onScoreChange('generalAppearance', getScoreFromValue(generalAppearanceOptions, value)),
-    },
-  ];
+  const getScoreFromValue = (criterionId: string, value: string) => {
+    // Find the criterion in config
+    for (const section of assessmentConfig) {
+      const criterion = section.criteria.find(c => c.id === criterionId);
+      if (criterion) {
+        const option = criterion.options.find(opt => opt.value === value);
+        return option?.points || 0;
+      }
+    }
+    return 0;
+  };
 
-  const section2Criteria = [
-    {
-      id: 'positioningPitch',
-      label: 'Positioning on the Pitch',
-      options: positioningOptions,
-      value: getValueFromScore(positioningOptions, scores.positioningPitch),
-      onValueChange: (value: string) => onScoreChange('positioningPitch', getScoreFromValue(positioningOptions, value)),
-    },
-    {
-      id: 'positioningD',
-      label: 'Positioning in the D',
-      options: positioningOptions,
-      value: getValueFromScore(positioningOptions, scores.positioningD),
-      onValueChange: (value: string) => onScoreChange('positioningD', getScoreFromValue(positioningOptions, value)),
-    },
-  ];
+  // Build sections dynamically from config
+  const sections = assessmentConfig.map(sectionConfig => {
+    const criteria = sectionConfig.criteria.map(criterion => {
+      // Find the corresponding legacy field
+      const legacyField = Object.entries(fieldMapping).find(([_, id]) => id === criterion.id)?.[0] as keyof AssessmentCriteria;
+      
+      if (!legacyField) return null;
 
-  const section1Score = scores.arrivalTime + scores.generalAppearance;
-  const section2Score = scores.positioningPitch + scores.positioningD;
-  const totalScore = section1Score + section2Score;
+      return {
+        id: criterion.id,
+        label: criterion.label,
+        options: criterion.options.map(opt => ({
+          value: opt.value,
+          label: opt.label,
+          score: opt.points, // AssessmentSection expects 'score' property
+        })),
+        value: getValueFromScore(criterion.id, scores[legacyField]),
+        onValueChange: (value: string) => {
+          const points = getScoreFromValue(criterion.id, value);
+          onScoreChange(legacyField, points);
+        },
+      };
+    }).filter(Boolean);
+
+    // Calculate current score for this section
+    const currentScore = criteria.reduce((total, criterion) => {
+      if (!criterion) return total;
+      const legacyField = Object.entries(fieldMapping).find(([_, id]) => id === criterion.id)?.[0] as keyof AssessmentCriteria;
+      return total + (legacyField ? scores[legacyField] : 0);
+    }, 0);
+
+    const maxScore = getSectionMaxScore(sectionConfig.id);
+
+    return {
+      title: sectionConfig.title,
+      criteria: criteria.filter(Boolean),
+      maxScore,
+      currentScore,
+    };
+  });
+
+  const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
 
   return (
     <div className="space-y-6">
@@ -79,19 +91,15 @@ export function UmpireAssessment({ umpireName, scores, onScoreChange }: UmpireAs
         <p className="text-sm text-gray-600 mt-1">Total Score: <span className="font-bold text-blue-600">{totalScore}/6</span></p>
       </div>
       
-      <AssessmentSection
-        title="Section 1: Before & After the Game"
-        criteria={section1Criteria}
-        maxScore={2}
-        currentScore={section1Score}
-      />
-      
-      <AssessmentSection
-        title="Section 2: Positioning"
-        criteria={section2Criteria}
-        maxScore={4}
-        currentScore={section2Score}
-      />
+      {sections.map((section, index) => (
+        <AssessmentSection
+          key={index}
+          title={section.title}
+          criteria={section.criteria}
+          maxScore={section.maxScore}
+          currentScore={section.currentScore}
+        />
+      ))}
     </div>
   );
 }

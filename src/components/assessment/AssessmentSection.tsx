@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroupCustom } from '@/components/ui/radio-group-custom';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface AssessmentSectionProps {
   title: string;
@@ -16,9 +18,20 @@ interface AssessmentSectionProps {
   }>;
   maxScore: number;
   currentScore: number;
+  hasRemarks?: boolean;
+  remarks?: string;
+  onRemarksChange?: (remarks: string) => void;
 }
 
-export function AssessmentSection({ title, criteria, maxScore, currentScore }: AssessmentSectionProps) {
+export function AssessmentSection({ 
+  title, 
+  criteria, 
+  maxScore, 
+  currentScore, 
+  hasRemarks = false,
+  remarks = '',
+  onRemarksChange 
+}: AssessmentSectionProps) {
   return (
     <Card className="w-full">
       <CardHeader className="pb-4">
@@ -40,6 +53,21 @@ export function AssessmentSection({ title, criteria, maxScore, currentScore }: A
             />
           </div>
         ))}
+        
+        {hasRemarks && (
+          <div className="space-y-3 pt-4 border-t border-gray-100">
+            <Label htmlFor={`remarks-${title.toLowerCase().replace(/\s+/g, '-')}`} className="font-medium text-sm text-gray-700">
+              Additional Remarks
+            </Label>
+            <Textarea
+              id={`remarks-${title.toLowerCase().replace(/\s+/g, '-')}`}
+              placeholder="Add any additional comments or observations..."
+              value={remarks}
+              onChange={(e) => onRemarksChange?.(e.target.value)}
+              className="min-h-[80px] resize-none"
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
