@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 interface RadioOption {
@@ -14,13 +13,13 @@ interface RadioGroupCustomProps {
   className?: string;
 }
 
-export function RadioGroupCustom({ 
-  options, 
-  value, 
-  onValueChange, 
-  className 
+export function RadioGroupCustom({
+  options,
+  value,
+  onValueChange,
+  className
 }: RadioGroupCustomProps) {
-  
+
   const getOptionColors = (optionValue: string, isSelected: boolean) => {
     switch (optionValue) {
       case 'NOT_OK':
@@ -60,7 +59,7 @@ export function RadioGroupCustom({
       {options.map((option) => {
         const isSelected = value === option.value;
         const colors = getOptionColors(option.value, isSelected);
-        
+
         return (
           <label
             key={option.value}
