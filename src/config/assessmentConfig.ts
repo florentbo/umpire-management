@@ -7,7 +7,7 @@ export const assessmentConfig: AssessmentSection[] = [
       en: 'Before & After the Game',
       fr: 'Avant et Après le Match'
     },
-    hasRemarks: true,
+    hasRemarks: false,
     criteria: [
       {
         id: 'arrival-time',
@@ -57,7 +57,7 @@ export const assessmentConfig: AssessmentSection[] = [
       en: 'Positioning',
       fr: 'Positionnement'
     },
-    hasRemarks: true,
+    hasRemarks: false,
     criteria: [
       {
         id: 'positioning-pitch',
