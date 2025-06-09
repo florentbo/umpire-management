@@ -158,7 +158,7 @@ function AssessmentPage() {
     <div className="min-h-screen bg-gray-50">
       <Header title={t('titles.matchAssessment')} />
       
-      <div className="p-4 space-y-6">
+      <div className="p-4 max-w-7xl mx-auto space-y-6">
         {/* Match Info */}
         <Card>
           <CardHeader>
@@ -223,8 +223,8 @@ function AssessmentPage() {
           </div>
         </div>
 
-        {/* Assessment Grid */}
-        <div className={`grid gap-6 ${isVerticalView ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+        {/* Assessment Grid - Full Width */}
+        <div className={`grid gap-6 ${isVerticalView ? 'grid-cols-1' : 'grid-cols-1 xl:grid-cols-2'}`}>
           <UmpireAssessment
             umpireName={`Arbitre A: ${match.umpireA}`}
             scores={umpireAScores}
