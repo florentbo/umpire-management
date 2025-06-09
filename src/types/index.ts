@@ -44,12 +44,12 @@ export interface Report {
 // Supported languages
 export type Language = 'en' | 'fr';
 
-// Standard option values enum
+// Standard option values enum - 4 possible values
 export enum OptionValue {
   NOT_OK = 'NOT_OK',
-  PARTIALLY_OK = 'PARTIALLY_OK', 
   OK = 'OK',
-  EXCELLENT = 'EXCELLENT'
+  PARTIALLY_OK = 'PARTIALLY_OK',
+  TO_BE_DONE = 'TO_BE_DONE'
 }
 
 // New types for flexible assessment system

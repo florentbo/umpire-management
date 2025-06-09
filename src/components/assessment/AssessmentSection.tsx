@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroupCustom } from '@/components/ui/radio-group-custom';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { currentLanguage } from '@/config/assessmentConfig';
 
 interface AssessmentSectionProps {
   title: string;
@@ -32,13 +33,19 @@ export function AssessmentSection({
   remarks = '',
   onRemarksChange 
 }: AssessmentSectionProps) {
+  const scoreLabel = currentLanguage === 'fr' ? 'Score' : 'Score';
+  const remarksLabel = currentLanguage === 'fr' ? 'Remarques supplémentaires' : 'Additional Remarks';
+  const remarksPlaceholder = currentLanguage === 'fr' 
+    ? 'Ajoutez des commentaires ou observations supplémentaires...'
+    : 'Add any additional comments or observations...';
+
   return (
     <Card className="w-full">
       <CardHeader className="pb-4">
         <CardTitle className="flex justify-between items-center text-lg">
           <span>{title}</span>
           <span className="text-sm font-normal">
-            Score: <span className="font-bold text-blue-600">{currentScore}/{maxScore}</span>
+            {scoreLabel}: <span className="font-bold text-blue-600">{currentScore}/{maxScore}</span>
           </span>
         </CardTitle>
       </CardHeader>
@@ -57,11 +64,11 @@ export function AssessmentSection({
         {hasRemarks && (
           <div className="space-y-3 pt-4 border-t border-gray-100">
             <Label htmlFor={`remarks-${title.toLowerCase().replace(/\s+/g, '-')}`} className="font-medium text-sm text-gray-700">
-              Additional Remarks
+              {remarksLabel}
             </Label>
             <Textarea
               id={`remarks-${title.toLowerCase().replace(/\s+/g, '-')}`}
-              placeholder="Add any additional comments or observations..."
+              placeholder={remarksPlaceholder}
               value={remarks}
               onChange={(e) => onRemarksChange?.(e.target.value)}
               className="min-h-[80px] resize-none"

@@ -143,8 +143,8 @@ export const assessmentConfig: AssessmentSection[] = [
             points: 2 
           },
           { 
-            value: OptionValue.EXCELLENT, 
-            label: { en: 'Excellent', fr: 'Excellent' }, 
+            value: OptionValue.TO_BE_DONE, 
+            label: { en: 'To be done', fr: 'À faire' }, 
             points: 3 
           },
         ],
@@ -173,8 +173,8 @@ export const assessmentConfig: AssessmentSection[] = [
             points: 2 
           },
           { 
-            value: OptionValue.EXCELLENT, 
-            label: { en: 'Excellent', fr: 'Excellent' }, 
+            value: OptionValue.TO_BE_DONE, 
+            label: { en: 'To be done', fr: 'À faire' }, 
             points: 3 
           },
         ],
