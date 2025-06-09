@@ -1,4 +1,3 @@
-import React from 'react';
 import { AssessmentCriteria } from '@/types';
 import { AssessmentSection } from './AssessmentSection';
 
