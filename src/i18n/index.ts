@@ -39,7 +39,7 @@ i18n
     fallbackLng: 'fr', // French as default fallback
     lng: 'fr', // Force French as initial language
     debug: false,
-    
+
     // Language detection options - prioritize French
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
@@ -48,16 +48,11 @@ i18n
     },
 
     interpolation: {
-      escapeValue: false, // React already escapes values
+      escapeValue: false,
     },
 
-    // Namespace configuration
     defaultNS: 'common',
     ns: ['common', 'assessment', 'auth', 'dashboard', 'navigation'],
-
-    // Return key if translation is missing
-    returnKeyIfEmpty: true,
-    returnEmptyString: false,
   });
 
 export default i18n;

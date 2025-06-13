@@ -63,7 +63,7 @@ export function UmpireAssessment({
           onScoreChange(legacyField, points);
         },
       };
-    }).filter(Boolean);
+    }).filter((criterion): criterion is NonNullable<typeof criterion> => criterion !== null);
 
     // Calculate current score for this section
     const currentScore = criteria.reduce((total, criterion) => {

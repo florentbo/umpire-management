@@ -3,7 +3,7 @@ import { User } from '@/types';
 class AuthService {
   private currentUser: User | null = null;
 
-  login(email: string, password: string, role: 'umpire_manager' | 'umpire'): Promise<User> {
+  login(email: string, _password: string, role: 'umpire_manager' | 'umpire'): Promise<User> {
     // Simulate API call
     return new Promise((resolve) => {
       setTimeout(() => {
