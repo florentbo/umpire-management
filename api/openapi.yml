@@ -1,0 +1,111 @@
+openapi: 3.0.3
+info:
+  title: Dynamic Umpire Assessment API
+  description: API for dynamic umpire assessment configuration based on skill level
+  version: "1"
+servers:
+- url: https://virtserver.swaggerhub.com/florentorganization/Umpire/1
+  description: SwaggerHub API Auto Mocking
+- url: /api/v1
+paths:
+  /assessment-config:
+    get:
+      summary: Get assessment configuration for a specific umpire level
+      operationId: getAssessmentConfig
+      parameters:
+      - name: level
+        in: query
+        description: Umpire skill level
+        required: true
+        schema:
+          type: string
+          enum:
+          - junior
+          - senior
+          - national
+          - international
+      responses:
+        "200":
+          description: Assessment configuration successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentConfig'
+        "400":
+          description: Invalid level parameter
+        "404":
+          description: Configuration not found for specified level
+components:
+  schemas:
+    AssessmentConfig:
+      required:
+      - level
+      - topics
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+          - junior
+          - senior
+          - national
+          - international
+        topics:
+          maxItems: 4
+          minItems: 4
+          type: array
+          items:
+            $ref: '#/components/schemas/Topic'
+    Topic:
+      required:
+      - name
+      - questions
+      type: object
+      properties:
+        name:
+          type: string
+          enum:
+          - GAME_BEFORE_AND_AFTER
+          - TECHNICAL
+          - POSITIONING
+          - GAME_MANAGEMENT
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        remark:
+          type: string
+          description: Optional contextual note for the topic
+          nullable: true
+    Question:
+      required:
+      - answerPoints
+      - id
+      - text
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        answerPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerPoint'
+    AnswerPoint:
+      required:
+      - points
+      - value
+      type: object
+      properties:
+        value:
+          $ref: '#/components/schemas/AnswerOption'
+        points:
+          type: integer
+    AnswerOption:
+      type: string
+      enum:
+      - OK
+      - NOT_OK
+      - PARTIAL
+      - TO_BE_DONE
