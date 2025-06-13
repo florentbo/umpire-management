@@ -61,6 +61,7 @@
   "optionValues": {
     "NOT_OK": "Not OK",
     "OK": "OK",
+    "PARTIAL": "Partially OK",
     "PARTIALLY_OK": "Partially OK",
     "TO_BE_DONE": "To be done"
   }

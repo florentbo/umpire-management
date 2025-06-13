@@ -1,7 +1,10 @@
 import { AssessmentCriteria } from '@/types';
 import { AssessmentSection } from './AssessmentSection';
-import { assessmentConfig, getSectionMaxScore } from '@/config/assessmentConfig';
+import { useQuery } from '@tanstack/react-query';
+import { useAssessmentConfig } from '@/lib/api-client';
+import { AssessmentConfig } from '../../../dist/api';
 import { useTranslation } from 'react-i18next';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 interface UmpireAssessmentProps {
   umpireName: string;
@@ -11,6 +14,22 @@ interface UmpireAssessmentProps {
   onValueChange: (field: keyof AssessmentCriteria, value: string) => void;
 }
 
+// Map legacy field names to config criterion IDs
+const FIELD_MAPPING = {
+  arrivalTime: 'arrival-time',
+  generalAppearance: 'general-appearance',
+  positioningPitch: 'positioning-pitch',
+  positioningD: 'positioning-d',
+} as const;
+
+// Map API topic names to translation keys
+const TOPIC_NAME_TO_TRANSLATION_KEY: Record<string, string> = {
+  GAME_BEFORE_AND_AFTER: 'beforeAfterGame',
+  POSITIONING: 'positioning',
+  TECHNICAL: 'technicalSkills',
+  GAME_MANAGEMENT: 'gameManagement',
+};
+
 export function UmpireAssessment({ 
   umpireName, 
   scores, 
@@ -19,47 +38,60 @@ export function UmpireAssessment({
   onValueChange 
 }: UmpireAssessmentProps) {
   const { t } = useTranslation(['common', 'assessment']);
+  const { data: assessmentConfig, isLoading, error } = useQuery(
+    useAssessmentConfig(AssessmentConfig.level.JUNIOR)
+  );
 
-  // Map legacy field names to config criterion IDs
-  const fieldMapping = {
-    arrivalTime: 'arrival-time',
-    generalAppearance: 'general-appearance',
-    positioningPitch: 'positioning-pitch',
-    positioningD: 'positioning-d',
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-2 text-gray-600">{t('common:loading')}</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-8 text-red-500">
+        <AlertCircle className="h-8 w-8" />
+        <span className="ml-2">{t('common:errorLoading')}</span>
+      </div>
+    );
+  }
+
+  if (!assessmentConfig) return null;
 
   const getScoreFromValue = (criterionId: string, value: string): number => {
-    // Find the criterion in config
-    for (const section of assessmentConfig) {
-      const criterion = section.criteria.find(c => c.id === criterionId);
-      if (criterion) {
-        const option = criterion.options.find(opt => opt.value === value);
-        return option?.points || 0;
+    for (const topic of assessmentConfig.topics) {
+      const question = topic.questions.find(q => q.id === criterionId);
+      if (question) {
+        const answerPoint = question.answerPoints.find(ap => ap.value === value);
+        return answerPoint?.points || 0;
       }
     }
     return 0;
   };
 
-  // Build sections dynamically from config
-  const sections = assessmentConfig.map(sectionConfig => {
-    const criteria = sectionConfig.criteria.map(criterion => {
-      // Find the corresponding legacy field
-      const legacyField = Object.entries(fieldMapping).find(([_, id]) => id === criterion.id)?.[0] as keyof AssessmentCriteria;
+  // Build sections from API data
+  const sections = assessmentConfig.topics.map(topic => {
+    const criteria = topic.questions.map(question => {
+      const legacyField = Object.entries(FIELD_MAPPING).find(([_, id]) => id === question.id)?.[0] as keyof AssessmentCriteria;
       
       if (!legacyField) return null;
 
       return {
-        id: criterion.id,
-        label: t(`assessment:sections.${sectionConfig.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase())}.criteria.${criterion.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase())}.label`),
-        options: criterion.options.map(opt => ({
-          value: opt.value,
-          label: t(`common:optionValues.${opt.value}`),
-          score: opt.points, // AssessmentSection expects 'score' property
+        id: question.id,
+        label: question.text,
+        options: question.answerPoints.map(ap => ({
+          value: ap.value,
+          label: t(`common:optionValues.${ap.value}`),
+          score: ap.points,
         })),
-        value: selectedValues[legacyField] || '', // Use empty string if no value selected
+        value: selectedValues[legacyField] || '',
         onValueChange: (value: string) => {
           onValueChange(legacyField, value);
-          const points = getScoreFromValue(criterion.id, value);
+          const points = getScoreFromValue(question.id, value);
           onScoreChange(legacyField, points);
         },
       };
@@ -67,23 +99,25 @@ export function UmpireAssessment({
 
     // Calculate current score for this section
     const currentScore = criteria.reduce((total, criterion) => {
-      if (!criterion) return total;
-      const legacyField = Object.entries(fieldMapping).find(([_, id]) => id === criterion.id)?.[0] as keyof AssessmentCriteria;
+      const legacyField = Object.entries(FIELD_MAPPING).find(([_, id]) => id === criterion.id)?.[0] as keyof AssessmentCriteria;
       return total + (legacyField ? scores[legacyField] : 0);
     }, 0);
 
-    const maxScore = getSectionMaxScore(sectionConfig.id);
+    const maxScore = criteria.reduce((total, criterion) => {
+      return total + Math.max(...criterion.options.map(opt => opt.score));
+    }, 0);
 
     return {
-      title: t(`assessment:sections.${sectionConfig.id.replace(/-([a-z])/g, (g) => g[1].toUpperCase())}.title`),
-      criteria: criteria.filter(Boolean),
+      title: t(`assessment:sections.${TOPIC_NAME_TO_TRANSLATION_KEY[topic.name] || topic.name.toLowerCase()}.title`),
+      criteria,
       maxScore,
       currentScore,
-      hasRemarks: sectionConfig.hasRemarks,
+      hasRemarks: !!topic.remark,
     };
   });
 
   const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+  const maxTotalScore = sections.reduce((sum, section) => sum + section.maxScore, 0);
 
   return (
     <div className="space-y-6 w-full">
@@ -91,7 +125,7 @@ export function UmpireAssessment({
         <h3 className="font-bold text-lg text-gray-800">{umpireName}</h3>
         <p className="text-sm text-gray-600 mt-1">
           {t('common:labels.totalScore')}: 
-          <span className="font-bold text-blue-600"> {totalScore}/6</span>
+          <span className="font-bold text-blue-600"> {totalScore}/{maxTotalScore}</span>
         </p>
       </div>
       

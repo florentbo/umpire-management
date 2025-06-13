@@ -1,8 +1,9 @@
 import { QueryClient } from '@tanstack/react-query';
-import { DefaultService } from '../../dist/api';
+import { DefaultService, AssessmentConfig } from '../../dist/api';
+import { mockService } from './mock-service';
 
-// Create a client
-const apiClient = DefaultService;
+// Use mock service in development
+const apiClient = import.meta.env.DEV ? mockService : DefaultService;
 
 // Create a QueryClient instance
 export const queryClient = new QueryClient({
@@ -18,7 +19,7 @@ export const queryClient = new QueryClient({
 export { apiClient };
 
 // Export query hooks
-export const useAssessmentConfig = (level: 'junior' | 'senior' | 'national' | 'international') => {
+export const useAssessmentConfig = (level: AssessmentConfig.level) => {
   return {
     queryKey: ['assessmentConfig', level],
     queryFn: () => apiClient.getAssessmentConfig(level),
