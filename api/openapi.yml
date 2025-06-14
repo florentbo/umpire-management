@@ -35,6 +35,96 @@ paths:
           description: Invalid level parameter
         "404":
           description: Configuration not found for specified level
+  /assessments:
+    get:
+      summary: Get list of assessments
+      operationId: getAssessments
+      parameters:
+        - name: matchId
+          in: query
+          description: Filter by match ID
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: List of assessments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AssessmentResponse'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+        "400":
+          description: Invalid parameters
+        "401":
+          description: Unauthorized
+    post:
+      summary: Submit a new assessment
+      operationId: submitAssessment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessmentSubmission'
+      responses:
+        "201":
+          description: Assessment successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentResponse'
+        "400":
+          description: Invalid assessment data
+        "401":
+          description: Unauthorized
+        "404":
+          description: Match or umpire not found
+  /assessments/{id}:
+    get:
+      summary: Get assessment by ID
+      operationId: getAssessmentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Assessment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentResponse'
+        "404":
+          description: Assessment not found
+        "401":
+          description: Unauthorized
 components:
   schemas:
     AssessmentConfig:
@@ -109,3 +199,109 @@ components:
       - NOT_OK
       - PARTIAL
       - TO_BE_DONE
+    AssessmentSubmission:
+      required:
+      - matchId
+      - umpireA
+      - umpireB
+      type: object
+      properties:
+        matchId:
+          type: string
+          description: ID of the match being assessed
+        umpireA:
+          $ref: '#/components/schemas/Assessment'
+        umpireB:
+          $ref: '#/components/schemas/Assessment'
+    Assessment:
+      required:
+      - topics
+      - conclusion
+      type: object
+      properties:
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentTopic'
+          minItems: 1
+        conclusion:
+          type: string
+          description: Overall conclusion for this assessment
+    AssessmentTopic:
+      required:
+      - name
+      - questions
+      type: object
+      properties:
+        name:
+          type: string
+          enum:
+          - GAME_BEFORE_AND_AFTER
+          - TECHNICAL
+          - POSITIONING
+          - GAME_MANAGEMENT
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionResponse'
+          minItems: 1
+        remarks:
+          type: string
+          description: Optional remarks for this topic
+          nullable: true
+    QuestionResponse:
+      required:
+      - questionId
+      - value
+      type: object
+      properties:
+        questionId:
+          type: string
+          description: ID of the question being answered
+        value:
+          $ref: '#/components/schemas/AnswerOption'
+    AssessmentResponse:
+      required:
+      - id
+      - matchId
+      - assessorId
+      - umpireA
+      - umpireB
+      - createdAt
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the assessment
+        matchId:
+          type: string
+          description: ID of the match being assessed
+        assessorId:
+          type: string
+          description: ID of the assessor
+        umpireA:
+          $ref: '#/components/schemas/UmpireAssessment'
+        umpireB:
+          $ref: '#/components/schemas/UmpireAssessment'
+        createdAt:
+          type: string
+          format: date-time
+          description: When the assessment was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the assessment was last updated
+    UmpireAssessment:
+      required:
+      - topics
+      - conclusion
+      type: object
+      properties:
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentTopic'
+          minItems: 1
+        conclusion:
+          type: string
+          description: Overall conclusion for this umpire's assessment
