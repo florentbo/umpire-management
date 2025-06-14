@@ -1,34 +1,21 @@
 import { Match, Assessment, Report } from '@/types';
+import { parseMatchesFromCSV } from './csv-parser';
 
 // Mock data for development
-const mockMatches: Match[] = [
-  {
-    id: '1',
-    homeTeam: 'Lions FC',
-    awayTeam: 'Tigers United',
-    division: 'Premier League',
-    date: '2024-01-15',
-    time: '15:00',
-    umpireA: 'John Smith',
-    umpireB: 'Sarah Johnson',
-  },
-  {
-    id: '2',
-    homeTeam: 'Eagles FC',
-    awayTeam: 'Hawks United',
-    division: 'Championship',
-    date: '2024-01-16',
-    time: '18:30',
-    umpireA: 'Mike Wilson',
-    umpireB: 'Emma Davis',
-  },
-];
-
 const mockReports: Report[] = [
   {
     id: '1',
     matchId: '1',
-    match: mockMatches[0],
+    match: {
+      id: '1',
+      homeTeam: 'Lions FC',
+      awayTeam: 'Tigers United',
+      division: 'Premier League',
+      date: '2024-01-15',
+      time: '15:00',
+      umpireA: 'John Smith',
+      umpireB: 'Sarah Johnson',
+    },
     assessment: {
       id: '1',
       matchId: '1',
@@ -51,16 +38,38 @@ const mockReports: Report[] = [
   },
 ];
 
+// Lazy-load and cache CSV matches
+let csvMatchesCache: Match[] | null = null;
+let csvMatchesPromise: Promise<Match[]> | null = null;
+
+async function loadCsvMatches(): Promise<Match[]> {
+  if (csvMatchesCache) return csvMatchesCache;
+  if (csvMatchesPromise) return csvMatchesPromise;
+  csvMatchesPromise = fetch('/matches/games.csv')
+    .then(res => res.text())
+    .then(text => {
+      const matches = parseMatchesFromCSV(text);
+      csvMatchesCache = matches;
+      return matches;
+    })
+    .catch(error => {
+      console.error('Failed to load CSV matches:', error);
+      csvMatchesCache = [];
+      return [];
+    });
+  return csvMatchesPromise;
+}
+
 export const apiService = {
   getMatches: async (): Promise<Match[]> => {
-    // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 500));
-    return mockMatches;
+    return loadCsvMatches();
   },
 
   getMatch: async (id: string): Promise<Match | null> => {
     await new Promise(resolve => setTimeout(resolve, 500));
-    return mockMatches.find(match => match.id === id) || null;
+    const matches = await loadCsvMatches();
+    return matches.find(match => match.id === id) || null;
   },
 
   saveAssessment: async (assessment: Assessment): Promise<Assessment> => {
@@ -70,7 +79,6 @@ export const apiService = {
 
   getReports: async (userId: string, userRole: string): Promise<Report[]> => {
     await new Promise(resolve => setTimeout(resolve, 500));
-    // For demo purposes, return all reports for managers, filtered for umpires
     if (userRole === 'umpire_manager') {
       return mockReports;
     }
