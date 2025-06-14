@@ -1,9 +1,9 @@
 import { QueryClient } from '@tanstack/react-query';
-import { DefaultService, AssessmentConfig } from '../../dist/api';
+import { AssessmentConfig } from '../../dist/api';
 import { mockService } from './mock-service';
 
-// Use mock service in development
-const apiClient = import.meta.env.DEV ? mockService : DefaultService;
+// Always use mock service for now
+const apiClient = mockService;
 
 // Create a QueryClient instance
 export const queryClient = new QueryClient({
@@ -24,4 +24,4 @@ export const useAssessmentConfig = (level: AssessmentConfig.level) => {
     queryKey: ['assessmentConfig', level],
     queryFn: () => apiClient.getAssessmentConfig(level),
   };
-}; 
+};
