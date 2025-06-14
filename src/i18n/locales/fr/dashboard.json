@@ -1,6 +1,9 @@
 {
   "manager": {
     "title": "Tableau de Bord Gestionnaire",
+    "showAllGames": "Afficher Tous les Matches",
+    "hideAllGames": "Masquer Tous les Matches",
+    "findGame": "Trouver un Match",
     "quickActions": {
       "title": "Actions Rapides",
       "description": "Commencer les évaluations pour les matchs à venir"
@@ -12,8 +15,16 @@
       "assessedBy": "Évalué par {{name}}"
     },
     "allMatches": {
-      "title": "Tous les Matchs",
-      "description": "Sélectionnez un match pour commencer une évaluation"
+      "title": "Tous les Matches",
+      "description": "Voir tous les matches"
+    },
+    "findGameModal": {
+      "title": "Trouver un Match",
+      "date": "Date",
+      "umpire": "Arbitre",
+      "umpirePlaceholder": "Entrez le nom de l'arbitre",
+      "search": "Rechercher",
+      "results": "Résultats de la Recherche"
     }
   },
   "umpire": {
