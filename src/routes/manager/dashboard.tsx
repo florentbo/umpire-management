@@ -11,7 +11,9 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Match } from '@/types';
+import { Match, Report } from '@/types';
+import { supabase } from '@/lib/supabase';
+import { FileText, Calendar, User } from 'lucide-react';
 
 export const Route = createFileRoute('/manager/dashboard')({
   beforeLoad: () => {
@@ -30,6 +32,9 @@ function ManagerDashboard() {
   const [umpire, setUmpire] = useState('');
   const [searchResults, setSearchResults] = useState<Match[]>([]);
   const [showAllGames, setShowAllGames] = useState(false);
+  const [showAllReports, setShowAllReports] = useState(false);
+  const [allReports, setAllReports] = useState<any[]>([]);
+  const [loadingReports, setLoadingReports] = useState(false);
 
   const { data: matches = [] as Match[] } = useQuery<Match[]>({
     queryKey: ['matches'],
@@ -58,6 +63,66 @@ function ManagerDashboard() {
     setSearchResults(filteredMatches);
   };
 
+  const fetchAllReports = async () => {
+    setLoadingReports(true);
+    try {
+      const { data: reports, error } = await supabase
+        .from('match_reports')
+        .select(`
+          *,
+          assessments (*)
+        `)
+        .order('submitted_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching reports:', error);
+        return;
+      }
+
+      setAllReports(reports || []);
+      setShowAllReports(true);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  const calculateTotalScore = (umpireData: any) => {
+    if (!umpireData?.topics) return 0;
+    return umpireData.topics.reduce((total: number, topic: any) => {
+      return total + (topic.questionResponses?.reduce((topicTotal: number, response: any) => {
+        return topicTotal + (response.points || 0);
+      }, 0) || 0);
+    }, 0);
+  };
+
+  const getGradeColor = (level: string) => {
+    switch (level) {
+      case 'BELOW_EXPECTATION':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'AT_CURRENT_LEVEL':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'ABOVE_EXPECTATION':
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getGradeLabel = (level: string) => {
+    switch (level) {
+      case 'BELOW_EXPECTATION':
+        return 'En dessous des attentes';
+      case 'AT_CURRENT_LEVEL':
+        return 'Au niveau actuel';
+      case 'ABOVE_EXPECTATION':
+        return 'Au-dessus des attentes';
+      default:
+        return level;
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-gray-50">
       <Header title={t('manager.title')} />
@@ -67,10 +132,133 @@ function ManagerDashboard() {
             <Button onClick={() => setShowAllGames(!showAllGames)}>
               {showAllGames ? t('manager.hideAllGames') : t('manager.showAllGames')}
             </Button>
-            {/*<Button onClick={() => setIsFindGameModalOpen(true)}>
-              {t('manager.findGame')}
-            </Button>*/}
+            <Button 
+              onClick={fetchAllReports} 
+              disabled={loadingReports}
+              variant="outline"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {loadingReports ? 'Chargement...' : showAllReports ? 'Masquer les rapports' : 'Voir tous les rapports'}
+            </Button>
           </div>
+
+          {/* All Reports Section */}
+          {showAllReports && (
+            <Card className="w-full">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5" />
+                  <span>Tous les Rapports d'Évaluation</span>
+                </CardTitle>
+                <CardDescription>
+                  Tous les rapports d'évaluation soumis dans le système
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="w-full">
+                {loadingReports ? (
+                  <div className="space-y-4 w-full">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="h-32 bg-gray-100 rounded-lg animate-pulse w-full" />
+                    ))}
+                  </div>
+                ) : allReports.length === 0 ? (
+                  <div className="text-center py-12 w-full">
+                    <FileText className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500 text-lg">Aucun rapport trouvé</p>
+                    <p className="text-sm text-gray-400 mt-2">Les rapports d'évaluation apparaîtront ici une fois soumis</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 w-full">
+                    {allReports.map((report) => {
+                      const assessment = report.assessments;
+                      const matchInfo = report.match_info;
+                      const umpireAScore = calculateTotalScore(assessment?.umpire_a_data);
+                      const umpireBScore = calculateTotalScore(assessment?.umpire_b_data);
+                      const umpireAGrade = assessment?.umpire_a_data?.grade;
+                      const umpireBGrade = assessment?.umpire_b_data?.grade;
+
+                      return (
+                        <Card key={report.id} className="border-l-4 border-l-blue-500 w-full">
+                          <CardContent className="p-6 w-full">
+                            <div className="flex justify-between items-start mb-4 w-full">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-lg truncate">
+                                  {matchInfo?.homeTeam} vs {matchInfo?.awayTeam}
+                                </div>
+                                <div className="text-sm text-gray-600 mt-1">
+                                  {matchInfo?.division}
+                                </div>
+                                <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                                  <div className="flex items-center space-x-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>{format(new Date(report.submitted_at), 'MMM d, yyyy')}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <User className="h-3 w-3" />
+                                    <span>Évalué par: {assessment?.assessor_id}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                              {/* Umpire A */}
+                              <div className="space-y-3 w-full">
+                                <div className="font-semibold text-gray-700">
+                                  Arbitre A: {matchInfo?.umpireAName}
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-600">Score Total:</span>
+                                  <span className="font-bold text-blue-600">{umpireAScore}</span>
+                                </div>
+                                {umpireAGrade && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-600">Niveau:</span>
+                                    <span className={`px-2 py-1 rounded text-xs font-medium ${getGradeColor(umpireAGrade.level)}`}>
+                                      {getGradeLabel(umpireAGrade.level)}
+                                    </span>
+                                  </div>
+                                )}
+                                {assessment?.umpire_a_data?.conclusion && (
+                                  <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                                    <strong>Conclusion:</strong> {assessment.umpire_a_data.conclusion}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Umpire B */}
+                              <div className="space-y-3 w-full">
+                                <div className="font-semibold text-gray-700">
+                                  Arbitre B: {matchInfo?.umpireBName}
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-600">Score Total:</span>
+                                  <span className="font-bold text-blue-600">{umpireBScore}</span>
+                                </div>
+                                {umpireBGrade && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-600">Niveau:</span>
+                                    <span className={`px-2 py-1 rounded text-xs font-medium ${getGradeColor(umpireBGrade.level)}`}>
+                                      {getGradeLabel(umpireBGrade.level)}
+                                    </span>
+                                  </div>
+                                )}
+                                {assessment?.umpire_b_data?.conclusion && (
+                                  <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                                    <strong>Conclusion:</strong> {assessment.umpire_b_data.conclusion}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* All Matches */}
           {showAllGames && (
