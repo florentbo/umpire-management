@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { UmpireAssessment } from '@/components/assessment/UmpireAssessment';
 import { GradeDisplay } from '@/presentation/components/GradeDisplay';
@@ -17,9 +17,10 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
 export const Route = createFileRoute('/manager/assessment/$matchId')({
-  beforeLoad: () => {
-    const user = authService.getCurrentUser();
-    if (!user || user.role !== 'umpire_manager') {
+  beforeLoad: async () => {
+    const isAuthenticated = await authService.isAuthenticated();
+    const user = await authService.getCurrentUser();
+    if (!isAuthenticated || !user || user.role !== 'umpire_manager') {
       throw new Error('Unauthorized');
     }
   },
@@ -29,7 +30,7 @@ export const Route = createFileRoute('/manager/assessment/$matchId')({
 function AssessmentPage() {
   const { matchId } = Route.useParams();
   const router = useRouter();
-  const user = authService.getCurrentUser();
+  const [user, setUser] = useState(authService.getCurrentUserSync());
   const { t } = useTranslation(['assessment', 'dashboard', 'common']);
   const createAssessmentMutation = useCreateAssessment();
   
@@ -65,6 +66,15 @@ function AssessmentPage() {
   // Conclusions
   const [umpireAConclusion, setUmpireAConclusion] = useState('');
   const [umpireBConclusion, setUmpireBConclusion] = useState('');
+
+  // Update user state when component mounts
+  useEffect(() => {
+    const updateUser = async () => {
+      const currentUser = await authService.getCurrentUser();
+      setUser(currentUser);
+    };
+    updateUser();
+  }, []);
 
   const { data: match, isLoading } = useQuery({
     queryKey: ['match', matchId],
@@ -141,7 +151,7 @@ function AssessmentPage() {
 
     const request: CreateAssessmentRequest = {
       matchId: match.id,
-      assessorId: user.email, // Use email as assessor ID to match RLS policy
+      assessorId: user.id, // Use user.id (Supabase UUID) instead of email
       matchInfo: {
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
