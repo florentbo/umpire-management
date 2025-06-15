@@ -27,6 +27,8 @@
     "umpires": "Arbitres",
     "remarks": "Remarques complémentaires / Points à travailler :",
     "remarksPlaceholder": "Ajoutez des commentaires ou observations supplémentaires...",
+    "conclusion": "Conclusion",
+    "conclusionPlaceholder": "Ajoutez votre conclusion générale de l'évaluation...",
     "email": "Email",
     "password": "Mot de passe",
     "role": "Rôle",
@@ -44,7 +46,8 @@
       "save": "Échec de l'enregistrement",
       "load": "Échec du chargement",
       "network": "Erreur réseau",
-      "unauthorized": "Accès non autorisé"
+      "unauthorized": "Accès non autorisé",
+      "incompleteForm": "Veuillez remplir tous les critères et conclusions pour les deux arbitres avant de sauvegarder."
     },
     "validation": {
       "required": "Ce champ est obligatoire",

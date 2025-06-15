@@ -14,4 +14,5 @@ export interface MatchReportRepository {
   findById(id: MatchReportId): Promise<MatchReport | null>;
   findByMatchId(matchId: MatchId): Promise<MatchReport[]>;
   findByAssessor(assessorId: string): Promise<MatchReport[]>;
+  findAll(): Promise<MatchReport[]>; // Added this method
 }

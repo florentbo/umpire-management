@@ -1,6 +1,6 @@
-import { AssessmentRepository, MatchReportRepository } from '../../domain/repositories/AssessmentRepository';
-import { Assessment, AssessmentId, MatchId } from '../../domain/entities/Assessment';
-import { MatchReport, MatchReportId } from '../../domain/entities/MatchReport';
+import { AssessmentRepository, MatchReportRepository } from '@/domain/repositories/AssessmentRepository.ts';
+import { Assessment, AssessmentId, MatchId } from '@/domain/entities/Assessment.ts';
+import { MatchReport, MatchReportId } from '@/domain/entities/MatchReport.ts';
 
 // Supabase client would be injected here
 interface SupabaseClient {
@@ -14,7 +14,7 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
     const data = {
       id: assessment.id.value,
       match_id: assessment.matchId.value,
-      assessor_id: assessment.assessorId.value, // Use the assessor ID from the domain entity
+      assessor_id: assessment.assessorId.value,
       umpire_a_data: assessment.umpireA,
       umpire_b_data: assessment.umpireB,
       created_at: assessment.createdAt.toISOString(),
@@ -28,7 +28,7 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
       .single();
 
     if (error) throw new Error(`Failed to save assessment: ${error.message}`);
-    
+
     return this.mapToAssessment(result);
   }
 
@@ -54,7 +54,7 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
       .eq('match_id', matchId.value);
 
     if (error) throw new Error(`Failed to find assessments: ${error.message}`);
-    
+
     return data.map((item: any) => this.mapToAssessment(item));
   }
 
@@ -73,7 +73,7 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
       .single();
 
     if (error) throw new Error(`Failed to update assessment: ${error.message}`);
-    
+
     return this.mapToAssessment(result);
   }
 
@@ -118,7 +118,7 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
       .single();
 
     if (error) throw new Error(`Failed to save match report: ${error.message}`);
-    
+
     return this.mapToMatchReport(result, report.assessment);
   }
 
@@ -151,7 +151,7 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
       .eq('match_id', matchId.value);
 
     if (error) throw new Error(`Failed to find match reports: ${error.message}`);
-    
+
     return data.map((item: any) => {
       const assessment = this.mapToAssessmentFromJoin(item.assessments);
       return this.mapToMatchReport(item, assessment);
@@ -168,7 +168,24 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
       .eq('assessments.assessor_id', assessorId);
 
     if (error) throw new Error(`Failed to find match reports by assessor: ${error.message}`);
-    
+
+    return data.map((item: any) => {
+      const assessment = this.mapToAssessmentFromJoin(item.assessments);
+      return this.mapToMatchReport(item, assessment);
+    });
+  }
+
+  async findAll(): Promise<MatchReport[]> {
+    const { data, error } = await this.supabase
+      .from('match_reports')
+      .select(`
+        *,
+        assessments (*)
+      `)
+      .order('submitted_at', { ascending: false });
+
+    if (error) throw new Error(`Failed to find all match reports: ${error.message}`);
+
     return data.map((item: any) => {
       const assessment = this.mapToAssessmentFromJoin(item.assessments);
       return this.mapToMatchReport(item, assessment);
