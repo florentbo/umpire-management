@@ -5,7 +5,6 @@ import { useAssessmentConfig } from '@/lib/api-client';
 import { AssessmentConfig } from '../../../dist/api';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,8 @@ interface UmpireAssessmentProps {
   onScoreChange: (field: keyof AssessmentCriteria, value: number) => void;
   selectedValues: Record<keyof AssessmentCriteria, string>;
   onValueChange: (field: keyof AssessmentCriteria, value: string) => void;
+  conclusion: string;
+  onConclusionChange: (conclusion: string) => void;
 }
 
 // Map legacy field names to config criterion IDs
@@ -39,10 +40,11 @@ export function UmpireAssessment({
   scores, 
   onScoreChange, 
   selectedValues, 
-  onValueChange 
+  onValueChange,
+  conclusion,
+  onConclusionChange
 }: UmpireAssessmentProps) {
   const { t } = useTranslation(['common', 'assessment']);
-  const [conclusion, setConclusion] = useState('');
   const { data: assessmentConfig, isLoading, error } = useQuery(
     useAssessmentConfig(AssessmentConfig.level.JUNIOR)
   );
@@ -156,7 +158,7 @@ export function UmpireAssessment({
             id="assessment-conclusion"
             placeholder={t('assessment:conclusion.placeholder')}
             value={conclusion}
-            onChange={(e) => setConclusion(e.target.value)}
+            onChange={(e) => onConclusionChange(e.target.value)}
             className="min-h-[80px] resize-none w-full"
             required
           />

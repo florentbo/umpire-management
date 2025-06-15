@@ -1,12 +1,15 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { UmpireAssessment } from '@/components/assessment/UmpireAssessment';
+import { GradeDisplay } from '@/presentation/components/GradeDisplay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiService } from '@/lib/api';
 import { authService } from '@/lib/auth';
+import { useCreateAssessment } from '@/presentation/hooks/useCreateAssessment';
+import { CreateAssessmentRequest } from '@/application/usecases/CreateAssessmentUseCase';
 import { AssessmentCriteria } from '@/types';
 import { format } from 'date-fns';
 import { RotateCcw, Save, ToggleLeft, ToggleRight, AlertCircle } from 'lucide-react';
@@ -28,8 +31,10 @@ function AssessmentPage() {
   const router = useRouter();
   const user = authService.getCurrentUser();
   const { t } = useTranslation(['assessment', 'dashboard', 'common']);
+  const createAssessmentMutation = useCreateAssessment();
   
   const [isVerticalView, setIsVerticalView] = useState(false);
+  const [showGrades, setShowGrades] = useState(false);
   const [umpireAScores, setUmpireAScores] = useState<AssessmentCriteria>({
     arrivalTime: 0,
     generalAppearance: 0,
@@ -57,43 +62,114 @@ function AssessmentPage() {
     positioningD: '',
   });
 
+  // Conclusions
+  const [umpireAConclusion, setUmpireAConclusion] = useState('');
+  const [umpireBConclusion, setUmpireBConclusion] = useState('');
+
   const { data: match, isLoading } = useQuery({
     queryKey: ['match', matchId],
     queryFn: () => apiService.getMatch(matchId),
-  });
-
-  const saveAssessmentMutation = useMutation({
-    mutationFn: apiService.saveAssessment,
-    onSuccess: () => {
-      toast.success(t('common:messages.success.saved'));
-      router.navigate({ to: '/manager/dashboard' });
-    },
-    onError: () => {
-      toast.error(t('common:messages.error.save'));
-    },
   });
 
   // Validation function
   const isFormValid = () => {
     const umpireAComplete = Object.values(umpireAValues).every(value => value !== '');
     const umpireBComplete = Object.values(umpireBValues).every(value => value !== '');
-    return umpireAComplete && umpireBComplete;
+    const conclusionsComplete = umpireAConclusion.trim() !== '' && umpireBConclusion.trim() !== '';
+    return umpireAComplete && umpireBComplete && conclusionsComplete;
   };
 
-  const handleSave = () => {
+  const calculateGrade = (scores: AssessmentCriteria) => {
+    const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+    const maxScore = 50; // Configurable
+    const percentage = (totalScore / maxScore) * 100;
+    
+    let level: string;
+    if (percentage < 60) {
+      level = 'BELOW_EXPECTATION';
+    } else if (percentage >= 60 && percentage < 70) {
+      level = 'AT_CURRENT_LEVEL';
+    } else {
+      level = 'ABOVE_EXPECTATION';
+    }
+
+    return { totalScore, maxScore, percentage, level };
+  };
+
+  const handleSave = async () => {
     if (!match || !user) return;
     
     if (!isFormValid()) {
-      toast.error('Veuillez remplir tous les critères pour les deux arbitres avant de sauvegarder.');
+      toast.error('Veuillez remplir tous les critères et conclusions pour les deux arbitres avant de sauvegarder.');
       return;
     }
-    
-    saveAssessmentMutation.mutate({
+
+    // Convert legacy scores to new format
+    const umpireATopics = [
+      {
+        topicName: 'GAME_BEFORE_AND_AFTER',
+        questionResponses: [
+          { questionId: 'arrival-time', selectedValue: umpireAValues.arrivalTime, points: umpireAScores.arrivalTime },
+          { questionId: 'general-appearance', selectedValue: umpireAValues.generalAppearance, points: umpireAScores.generalAppearance }
+        ]
+      },
+      {
+        topicName: 'POSITIONING',
+        questionResponses: [
+          { questionId: 'positioning-pitch', selectedValue: umpireAValues.positioningPitch, points: umpireAScores.positioningPitch },
+          { questionId: 'positioning-d', selectedValue: umpireAValues.positioningD, points: umpireAScores.positioningD }
+        ]
+      }
+    ];
+
+    const umpireBTopics = [
+      {
+        topicName: 'GAME_BEFORE_AND_AFTER',
+        questionResponses: [
+          { questionId: 'arrival-time', selectedValue: umpireBValues.arrivalTime, points: umpireBScores.arrivalTime },
+          { questionId: 'general-appearance', selectedValue: umpireBValues.generalAppearance, points: umpireBScores.generalAppearance }
+        ]
+      },
+      {
+        topicName: 'POSITIONING',
+        questionResponses: [
+          { questionId: 'positioning-pitch', selectedValue: umpireBValues.positioningPitch, points: umpireBScores.positioningPitch },
+          { questionId: 'positioning-d', selectedValue: umpireBValues.positioningD, points: umpireBScores.positioningD }
+        ]
+      }
+    ];
+
+    const request: CreateAssessmentRequest = {
       matchId: match.id,
       assessorId: user.id,
-      umpireAScores,
-      umpireBScores,
-    });
+      matchInfo: {
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        division: match.division,
+        date: match.date,
+        time: match.time,
+        umpireAName: match.umpireA,
+        umpireBName: match.umpireB
+      },
+      umpireAAssessment: {
+        umpireId: match.umpireAId,
+        topics: umpireATopics,
+        conclusion: umpireAConclusion
+      },
+      umpireBAssessment: {
+        umpireId: match.umpireBId,
+        topics: umpireBTopics,
+        conclusion: umpireBConclusion
+      }
+    };
+
+    try {
+      const result = await createAssessmentMutation.mutateAsync(request);
+      setShowGrades(true);
+      console.log('Assessment created successfully:', result);
+    } catch (error) {
+      console.error('Failed to create assessment:', error);
+    }
   };
 
   const handleReset = () => {
@@ -121,6 +197,9 @@ function AssessmentPage() {
       positioningPitch: '',
       positioningD: '',
     });
+    setUmpireAConclusion('');
+    setUmpireBConclusion('');
+    setShowGrades(false);
     toast.success(t('common:messages.success.reset'));
   };
 
@@ -153,6 +232,8 @@ function AssessmentPage() {
   }
 
   const formValid = isFormValid();
+  const umpireAGrade = calculateGrade(umpireAScores);
+  const umpireBGrade = calculateGrade(umpireBScores);
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
@@ -188,15 +269,35 @@ function AssessmentPage() {
           </Card>
 
           {/* Validation Warning */}
-          {!formValid && (
+          {!formValid && !showGrades && (
             <Card className="border-orange-200 bg-orange-50 w-full">
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2 text-orange-700">
                   <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm">Veuillez remplir tous les critères pour pouvoir sauvegarder l'évaluation.</span>
+                  <span className="text-sm">Veuillez remplir tous les critères et conclusions pour pouvoir sauvegarder l'évaluation.</span>
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Grade Display */}
+          {showGrades && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+              <GradeDisplay
+                totalScore={umpireAGrade.totalScore}
+                maxScore={umpireAGrade.maxScore}
+                percentage={umpireAGrade.percentage}
+                level={umpireAGrade.level}
+                umpireName={`Arbitre A: ${match.umpireA}`}
+              />
+              <GradeDisplay
+                totalScore={umpireBGrade.totalScore}
+                maxScore={umpireBGrade.maxScore}
+                percentage={umpireBGrade.percentage}
+                level={umpireBGrade.level}
+                umpireName={`Arbitre B: ${match.umpireB}`}
+              />
+            </div>
           )}
 
           {/* Controls */}
@@ -216,48 +317,61 @@ function AssessmentPage() {
                 <RotateCcw className="h-4 w-4 mr-2" />
                 {t('common:buttons.reset')}
               </Button>
-              <Button 
-                size="sm" 
-                onClick={handleSave} 
-                disabled={saveAssessmentMutation.isPending || !formValid}
-                className={!formValid ? 'opacity-50 cursor-not-allowed' : ''}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saveAssessmentMutation.isPending ? t('common:buttons.saving') : t('common:buttons.save')}
-              </Button>
+              {!showGrades && (
+                <Button 
+                  size="sm" 
+                  onClick={handleSave} 
+                  disabled={createAssessmentMutation.isPending || !formValid}
+                  className={!formValid ? 'opacity-50 cursor-not-allowed' : ''}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {createAssessmentMutation.isPending ? t('common:buttons.saving') : t('common:buttons.save')}
+                </Button>
+              )}
+              {showGrades && (
+                <Button onClick={() => router.navigate({ to: '/manager/dashboard' })}>
+                  Retour au tableau de bord
+                </Button>
+              )}
             </div>
           </div>
 
-          {/* Assessment Grid - Full Width */}
-          <div className={`w-full ${isVerticalView ? 'space-y-8' : 'grid gap-8 grid-cols-1 xl:grid-cols-2'}`}>
-            <div className="w-full">
-              <UmpireAssessment
-                umpireName={`Arbitre A: ${match.umpireA}`}
-                scores={umpireAScores}
-                onScoreChange={(field, value) => 
-                  setUmpireAScores(prev => ({ ...prev, [field]: value }))
-                }
-                selectedValues={umpireAValues}
-                onValueChange={(field, value) => 
-                  setUmpireAValues(prev => ({ ...prev, [field]: value }))
-                }
-              />
+          {/* Assessment Grid - Only show if grades not displayed */}
+          {!showGrades && (
+            <div className={`w-full ${isVerticalView ? 'space-y-8' : 'grid gap-8 grid-cols-1 xl:grid-cols-2'}`}>
+              <div className="w-full">
+                <UmpireAssessment
+                  umpireName={`Arbitre A: ${match.umpireA}`}
+                  scores={umpireAScores}
+                  onScoreChange={(field, value) => 
+                    setUmpireAScores(prev => ({ ...prev, [field]: value }))
+                  }
+                  selectedValues={umpireAValues}
+                  onValueChange={(field, value) => 
+                    setUmpireAValues(prev => ({ ...prev, [field]: value }))
+                  }
+                  conclusion={umpireAConclusion}
+                  onConclusionChange={setUmpireAConclusion}
+                />
+              </div>
+              
+              <div className="w-full">
+                <UmpireAssessment
+                  umpireName={`Arbitre B: ${match.umpireB}`}
+                  scores={umpireBScores}
+                  onScoreChange={(field, value) => 
+                    setUmpireBScores(prev => ({ ...prev, [field]: value }))
+                  }
+                  selectedValues={umpireBValues}
+                  onValueChange={(field, value) => 
+                    setUmpireBValues(prev => ({ ...prev, [field]: value }))
+                  }
+                  conclusion={umpireBConclusion}
+                  onConclusionChange={setUmpireBConclusion}
+                />
+              </div>
             </div>
-            
-            <div className="w-full">
-              <UmpireAssessment
-                umpireName={`Arbitre B: ${match.umpireB}`}
-                scores={umpireBScores}
-                onScoreChange={(field, value) => 
-                  setUmpireBScores(prev => ({ ...prev, [field]: value }))
-                }
-                selectedValues={umpireBValues}
-                onValueChange={(field, value) => 
-                  setUmpireBValues(prev => ({ ...prev, [field]: value }))
-                }
-              />
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
