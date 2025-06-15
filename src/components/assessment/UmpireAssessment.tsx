@@ -1,4 +1,3 @@
-import { AssessmentCriteria } from '@/types';
 import { AssessmentSection } from './AssessmentSection';
 import { useQuery } from '@tanstack/react-query';
 import { useAssessmentConfig } from '@/lib/api-client';
@@ -10,21 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface UmpireAssessmentProps {
   umpireName: string;
-  scores: AssessmentCriteria;
-  onScoreChange: (field: keyof AssessmentCriteria, value: number) => void;
-  selectedValues: Record<keyof AssessmentCriteria, string>;
-  onValueChange: (field: keyof AssessmentCriteria, value: string) => void;
+  scores: Record<string, number>;
+  onScoreChange: (field: string, value: number) => void;
+  selectedValues: Record<string, string>;
+  onValueChange: (field: string, value: string) => void;
   conclusion: string;
   onConclusionChange: (conclusion: string) => void;
 }
-
-// Map legacy field names to config criterion IDs
-const FIELD_MAPPING = {
-  arrivalTime: 'arrival-time',
-  generalAppearance: 'general-appearance',
-  positioningPitch: 'positioning-pitch',
-  positioningD: 'positioning-d',
-} as const;
 
 // Map API topic names to translation keys
 const TOPIC_NAME_TO_TRANSLATION_KEY: Record<string, string> = {
@@ -81,32 +72,25 @@ export function UmpireAssessment({
 
   // Build sections from API data
   const sections = assessmentConfig.topics.map(topic => {
-    const criteria = topic.questions.map(question => {
-      const legacyField = Object.entries(FIELD_MAPPING).find(([_, id]) => id === question.id)?.[0] as keyof AssessmentCriteria;
-      
-      if (!legacyField) return null;
-
-      return {
-        id: question.id,
-        label: question.text,
-        options: question.answerPoints.map(ap => ({
-          value: ap.value,
-          label: t(`common:optionValues.${ap.value}`),
-          score: ap.points,
-        })),
-        value: selectedValues[legacyField] || '',
-        onValueChange: (value: string) => {
-          onValueChange(legacyField, value);
-          const points = getScoreFromValue(question.id, value);
-          onScoreChange(legacyField, points);
-        },
-      };
-    }).filter((criterion): criterion is NonNullable<typeof criterion> => criterion !== null);
+    const criteria = topic.questions.map(question => ({
+      id: question.id,
+      label: question.text,
+      options: question.answerPoints.map(ap => ({
+        value: ap.value,
+        label: t(`common:optionValues.${ap.value}`),
+        score: ap.points,
+      })),
+      value: selectedValues[question.id] || '',
+      onValueChange: (value: string) => {
+        onValueChange(question.id, value);
+        const points = getScoreFromValue(question.id, value);
+        onScoreChange(question.id, points);
+      },
+    }));
 
     // Calculate current score for this section
     const currentScore = criteria.reduce((total, criterion) => {
-      const legacyField = Object.entries(FIELD_MAPPING).find(([_, id]) => id === criterion.id)?.[0] as keyof AssessmentCriteria;
-      return total + (legacyField ? scores[legacyField] : 0);
+      return total + (scores[criterion.id] || 0);
     }, 0);
 
     const maxScore = criteria.reduce((total, criterion) => {
@@ -126,43 +110,37 @@ export function UmpireAssessment({
   const maxTotalScore = sections.reduce((sum, section) => sum + section.maxScore, 0);
 
   return (
-    <div className="space-y-6 w-full">
-      <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border w-full">
-        <h3 className="font-bold text-lg text-gray-800">{umpireName}</h3>
-        <p className="text-sm text-gray-600 mt-1">
-          {t('common:labels.totalScore')}: 
-          <span className="font-bold text-blue-600"> {totalScore}/{maxTotalScore}</span>
-        </p>
-      </div>
-      
-      {sections.map((section, index) => (
-        <AssessmentSection
-          key={index}
-          title={section.title}
-          criteria={section.criteria}
-          maxScore={section.maxScore}
-          currentScore={section.currentScore}
-          hasRemarks={section.hasRemarks}
-        />
-      ))}
-
-      <Card className="w-full">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg">
-            {t('assessment:conclusion.title')} <span className="text-red-500">*</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex justify-between items-center">
+          <span>{umpireName}</span>
+          <span className="text-sm font-normal">
+            {t('common:labels.totalScore')}: <span className="font-bold text-blue-600">{totalScore}/{maxTotalScore}</span>
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {sections.map((section) => (
+          <AssessmentSection
+            key={section.title}
+            title={section.title}
+            criteria={section.criteria}
+            maxScore={section.maxScore}
+            currentScore={section.currentScore}
+            hasRemarks={section.hasRemarks}
+          />
+        ))}
+        
+        <div className="space-y-3 pt-4 border-t border-gray-100">
+          <h4 className="font-medium text-sm text-gray-700">{t('common:labels.conclusion')}</h4>
           <Textarea
-            id="assessment-conclusion"
-            placeholder={t('assessment:conclusion.placeholder')}
+            placeholder={t('common:labels.conclusionPlaceholder')}
             value={conclusion}
             onChange={(e) => onConclusionChange(e.target.value)}
-            className="min-h-[80px] resize-none w-full"
-            required
+            className="min-h-[100px] resize-none"
           />
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

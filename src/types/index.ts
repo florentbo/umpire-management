@@ -31,8 +31,8 @@ export interface Assessment {
   id?: string;
   matchId: string;
   assessorId: string;
-  umpireAScores: AssessmentCriteria;
-  umpireBScores: AssessmentCriteria;
+  umpireAScores: Record<string, number>;
+  umpireBScores: Record<string, number>;
   createdAt?: string;
   updatedAt?: string;
 }

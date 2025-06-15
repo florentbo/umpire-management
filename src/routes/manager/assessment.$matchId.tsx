@@ -10,11 +10,12 @@ import { apiService } from '@/lib/api';
 import { authService } from '@/lib/auth';
 import { useCreateAssessment } from '@/presentation/hooks/useCreateAssessment';
 import { CreateAssessmentRequest } from '@/application/usecases/CreateAssessmentUseCase';
-import { AssessmentCriteria } from '@/types';
 import { format } from 'date-fns';
 import { RotateCcw, Save, ToggleLeft, ToggleRight, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useAssessmentConfig } from '@/lib/api-client';
+import { AssessmentConfig } from '../../../dist/api';
 
 export const Route = createFileRoute('/manager/assessment/$matchId')({
   beforeLoad: () => {
@@ -35,53 +36,49 @@ function AssessmentPage() {
   
   const [isVerticalView, setIsVerticalView] = useState(false);
   const [showGrades, setShowGrades] = useState(false);
-  const [umpireAScores, setUmpireAScores] = useState<AssessmentCriteria>({
-    arrivalTime: 0,
-    generalAppearance: 0,
-    positioningPitch: 0,
-    positioningD: 0,
-  });
-  const [umpireBScores, setUmpireBScores] = useState<AssessmentCriteria>({
-    arrivalTime: 0,
-    generalAppearance: 0,
-    positioningPitch: 0,
-    positioningD: 0,
-  });
 
-  // Track selected values for validation
-  const [umpireAValues, setUmpireAValues] = useState<Record<keyof AssessmentCriteria, string>>({
-    arrivalTime: '',
-    generalAppearance: '',
-    positioningPitch: '',
-    positioningD: '',
-  });
-  const [umpireBValues, setUmpireBValues] = useState<Record<keyof AssessmentCriteria, string>>({
-    arrivalTime: '',
-    generalAppearance: '',
-    positioningPitch: '',
-    positioningD: '',
-  });
-
-  // Conclusions
+  // Dynamic state based on assessment config
+  const [umpireAScores, setUmpireAScores] = useState<Record<string, number>>({});
+  const [umpireAValues, setUmpireAValues] = useState<Record<string, string>>({});
   const [umpireAConclusion, setUmpireAConclusion] = useState('');
+
+  const [umpireBScores, setUmpireBScores] = useState<Record<string, number>>({});
+  const [umpireBValues, setUmpireBValues] = useState<Record<string, string>>({});
   const [umpireBConclusion, setUmpireBConclusion] = useState('');
 
-  const { data: match, isLoading } = useQuery({
+  const { data: match, isLoading: matchLoading } = useQuery({
     queryKey: ['match', matchId],
     queryFn: () => apiService.getMatch(matchId),
   });
 
+  const { data: assessmentConfig, isLoading: configLoading } = useQuery(
+    useAssessmentConfig(AssessmentConfig.level.JUNIOR)
+  );
+
+  const isLoading = matchLoading || configLoading;
+
   // Validation function
   const isFormValid = () => {
-    const umpireAComplete = Object.values(umpireAValues).every(value => value !== '');
-    const umpireBComplete = Object.values(umpireBValues).every(value => value !== '');
+    if (!assessmentConfig) return false;
+
+    const allQuestionsAnswered = (values: Record<string, string>) => {
+      return assessmentConfig.topics.every(topic =>
+        topic.questions.every(question => values[question.id] !== undefined && values[question.id] !== '')
+      );
+    };
+
     const conclusionsComplete = umpireAConclusion.trim() !== '' && umpireBConclusion.trim() !== '';
-    return umpireAComplete && umpireBComplete && conclusionsComplete;
+    return allQuestionsAnswered(umpireAValues) && allQuestionsAnswered(umpireBValues) && conclusionsComplete;
   };
 
-  const calculateGrade = (scores: AssessmentCriteria) => {
+  const calculateGrade = (scores: Record<string, number>) => {
+    if (!assessmentConfig) return { totalScore: 0, maxScore: 0, percentage: 0, level: 'AT_CURRENT_LEVEL' };
+
     const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
-    const maxScore = 50; // Configurable
+    const maxScore = assessmentConfig.topics.reduce((sum, topic) => 
+      sum + topic.questions.reduce((topicSum, question) => 
+        topicSum + Math.max(...question.answerPoints.map(ap => ap.points)), 0), 0);
+    
     const percentage = (totalScore / maxScore) * 100;
     
     let level: string;
@@ -97,51 +94,26 @@ function AssessmentPage() {
   };
 
   const handleSave = async () => {
-    if (!match || !user) return;
+    if (!match || !assessmentConfig || !user) return;
     
     if (!isFormValid()) {
-      toast.error('Veuillez remplir tous les critères et conclusions pour les deux arbitres avant de sauvegarder.');
+      toast.error(t('common:messages.error.incompleteForm'));
       return;
     }
 
-    // Convert legacy scores to new format
-    const umpireATopics = [
-      {
-        topicName: 'GAME_BEFORE_AND_AFTER',
-        questionResponses: [
-          { questionId: 'arrival-time', selectedValue: umpireAValues.arrivalTime, points: umpireAScores.arrivalTime },
-          { questionId: 'general-appearance', selectedValue: umpireAValues.generalAppearance, points: umpireAScores.generalAppearance }
-        ]
-      },
-      {
-        topicName: 'POSITIONING',
-        questionResponses: [
-          { questionId: 'positioning-pitch', selectedValue: umpireAValues.positioningPitch, points: umpireAScores.positioningPitch },
-          { questionId: 'positioning-d', selectedValue: umpireAValues.positioningD, points: umpireAScores.positioningD }
-        ]
-      }
-    ];
-
-    const umpireBTopics = [
-      {
-        topicName: 'GAME_BEFORE_AND_AFTER',
-        questionResponses: [
-          { questionId: 'arrival-time', selectedValue: umpireBValues.arrivalTime, points: umpireBScores.arrivalTime },
-          { questionId: 'general-appearance', selectedValue: umpireBValues.generalAppearance, points: umpireBScores.generalAppearance }
-        ]
-      },
-      {
-        topicName: 'POSITIONING',
-        questionResponses: [
-          { questionId: 'positioning-pitch', selectedValue: umpireBValues.positioningPitch, points: umpireBScores.positioningPitch },
-          { questionId: 'positioning-d', selectedValue: umpireBValues.positioningD, points: umpireBScores.positioningD }
-        ]
-      }
-    ];
+    const buildTopics = (values: Record<string, string>, scores: Record<string, number>) => 
+      assessmentConfig.topics.map(topic => ({
+        topicName: topic.name,
+        questionResponses: topic.questions.map(question => ({
+          questionId: question.id,
+          selectedValue: values[question.id] || '',
+          points: scores[question.id] || 0
+        }))
+      }));
 
     const request: CreateAssessmentRequest = {
       matchId: match.id,
-      assessorId: user.id, // Use the user ID from your auth system (e.g., "18" or "113")
+      assessorId: user.id,
       matchInfo: {
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
@@ -153,12 +125,12 @@ function AssessmentPage() {
       },
       umpireAAssessment: {
         umpireId: match.umpireAId,
-        topics: umpireATopics,
+        topics: buildTopics(umpireAValues, umpireAScores),
         conclusion: umpireAConclusion
       },
       umpireBAssessment: {
         umpireId: match.umpireBId,
-        topics: umpireBTopics,
+        topics: buildTopics(umpireBValues, umpireBScores),
         conclusion: umpireBConclusion
       }
     };
@@ -173,30 +145,26 @@ function AssessmentPage() {
   };
 
   const handleReset = () => {
-    setUmpireAScores({
-      arrivalTime: 0,
-      generalAppearance: 0,
-      positioningPitch: 0,
-      positioningD: 0,
-    });
-    setUmpireBScores({
-      arrivalTime: 0,
-      generalAppearance: 0,
-      positioningPitch: 0,
-      positioningD: 0,
-    });
-    setUmpireAValues({
-      arrivalTime: '',
-      generalAppearance: '',
-      positioningPitch: '',
-      positioningD: '',
-    });
-    setUmpireBValues({
-      arrivalTime: '',
-      generalAppearance: '',
-      positioningPitch: '',
-      positioningD: '',
-    });
+    if (!assessmentConfig) return;
+
+    const resetValues = () => {
+      const values: Record<string, string> = {};
+      const scores: Record<string, number> = {};
+      assessmentConfig.topics.forEach(topic => {
+        topic.questions.forEach(question => {
+          values[question.id] = '';
+          scores[question.id] = 0;
+        });
+      });
+      return { values, scores };
+    };
+
+    const { values: emptyValues, scores: emptyScores } = resetValues();
+    
+    setUmpireAScores(emptyScores);
+    setUmpireBScores(emptyScores);
+    setUmpireAValues(emptyValues);
+    setUmpireBValues(emptyValues);
     setUmpireAConclusion('');
     setUmpireBConclusion('');
     setShowGrades(false);
@@ -217,7 +185,7 @@ function AssessmentPage() {
     );
   }
 
-  if (!match) {
+  if (!match || !assessmentConfig) {
     return (
       <div className="min-h-screen w-full bg-gray-50">
         <Header title={t('dashboard:match.info.notFound')} />
@@ -274,7 +242,7 @@ function AssessmentPage() {
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2 text-orange-700">
                   <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm">Veuillez remplir tous les critères et conclusions pour pouvoir sauvegarder l'évaluation.</span>
+                  <span className="text-sm">{t('common:messages.error.incompleteForm')}</span>
                 </div>
               </CardContent>
             </Card>
@@ -330,7 +298,7 @@ function AssessmentPage() {
               )}
               {showGrades && (
                 <Button onClick={() => router.navigate({ to: '/manager/dashboard' })}>
-                  Retour au tableau de bord
+                  {t('dashboard:match.info.backToDashboard')}
                 </Button>
               )}
             </div>
