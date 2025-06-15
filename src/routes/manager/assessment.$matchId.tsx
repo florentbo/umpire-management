@@ -141,7 +141,7 @@ function AssessmentPage() {
 
     const request: CreateAssessmentRequest = {
       matchId: match.id,
-      assessorId: user.id,
+      assessorId: user.email, // Use email as assessor ID to match RLS policy
       matchInfo: {
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,

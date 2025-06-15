@@ -1,21 +1,21 @@
 import { User } from '@/types';
+import { createUserWithMapping } from './user-mapping';
 
 class AuthService {
   private currentUser: User | null = null;
 
-  login(email: string, _password: string, role: 'umpire_manager' | 'umpire'): Promise<User> {
+  async login(email: string, _password: string, role: 'umpire_manager' | 'umpire'): Promise<User> {
     // Simulate API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const user: User = {
-          id: '1',
-          name: email.split('@')[0],
-          email: email,
-          role,
-        };
-        this.currentUser = user;
-        localStorage.setItem('user', JSON.stringify(user));
-        resolve(user);
+    return new Promise(async (resolve, reject) => {
+      setTimeout(async () => {
+        try {
+          const user = await createUserWithMapping(email, role);
+          this.currentUser = user;
+          localStorage.setItem('user', JSON.stringify(user));
+          resolve(user);
+        } catch (error) {
+          reject(error);
+        }
       }, 1000);
     });
   }
