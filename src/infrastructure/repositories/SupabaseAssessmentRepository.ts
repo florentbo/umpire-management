@@ -5,21 +5,12 @@ import { MatchReport, MatchReportId } from '../../domain/entities/MatchReport';
 // Supabase client would be injected here
 interface SupabaseClient {
   from: (table: string) => any;
-  auth: {
-    getUser: () => Promise<{ data: { user: { id: string; email?: string } | null } }>;
-  };
 }
 
 export class SupabaseAssessmentRepository implements AssessmentRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
   async save(assessment: Assessment): Promise<Assessment> {
-    // Get the current authenticated user to ensure we use the correct ID
-    const { data: { user } } = await this.supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-
     const data = {
       id: assessment.id.value,
       match_id: assessment.matchId.value,
