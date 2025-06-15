@@ -5,18 +5,27 @@ import { MatchReport, MatchReportId } from '../../domain/entities/MatchReport';
 // Supabase client would be injected here
 interface SupabaseClient {
   from: (table: string) => any;
+  auth: {
+    getUser: () => Promise<{ data: { user: { id: string; email?: string } | null } }>;
+  };
 }
 
 export class SupabaseAssessmentRepository implements AssessmentRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
   async save(assessment: Assessment): Promise<Assessment> {
+    // Get the current authenticated user
+    const { data: { user } } = await this.supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User must be authenticated to create assessments');
+    }
+
     const data = {
       id: assessment.id.value,
       match_id: assessment.matchId.value,
-      assessor_id: assessment.assessorId.value,
-      umpire_a_data: JSON.stringify(assessment.umpireA),
-      umpire_b_data: JSON.stringify(assessment.umpireB),
+      assessor_id: user.id, // Use the authenticated user's UID
+      umpire_a_data: assessment.umpireA,
+      umpire_b_data: assessment.umpireB,
       created_at: assessment.createdAt.toISOString(),
       updated_at: assessment.updatedAt?.toISOString()
     };
@@ -60,8 +69,8 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
 
   async update(assessment: Assessment): Promise<Assessment> {
     const data = {
-      umpire_a_data: JSON.stringify(assessment.umpireA),
-      umpire_b_data: JSON.stringify(assessment.umpireB),
+      umpire_a_data: assessment.umpireA,
+      umpire_b_data: assessment.umpireB,
       updated_at: new Date().toISOString()
     };
 
@@ -91,8 +100,8 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
       { value: data.id },
       { value: data.match_id },
       { value: data.assessor_id },
-      JSON.parse(data.umpire_a_data),
-      JSON.parse(data.umpire_b_data),
+      data.umpire_a_data,
+      data.umpire_b_data,
       new Date(data.created_at),
       data.updated_at ? new Date(data.updated_at) : undefined
     );
@@ -106,7 +115,7 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
     const data = {
       id: report.id.value,
       match_id: report.matchInfo.id.value,
-      match_info: JSON.stringify(report.matchInfo),
+      match_info: report.matchInfo,
       assessment_id: report.assessment.id.value,
       submitted_at: report.submittedAt.toISOString()
     };
@@ -178,7 +187,7 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
   private mapToMatchReport(data: any, assessment: Assessment): MatchReport {
     return new MatchReport(
       { value: data.id },
-      JSON.parse(data.match_info),
+      data.match_info,
       assessment,
       new Date(data.submitted_at)
     );
@@ -189,8 +198,8 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
       { value: data.id },
       { value: data.match_id },
       { value: data.assessor_id },
-      JSON.parse(data.umpire_a_data),
-      JSON.parse(data.umpire_b_data),
+      data.umpire_a_data,
+      data.umpire_b_data,
       new Date(data.created_at),
       data.updated_at ? new Date(data.updated_at) : undefined
     );
