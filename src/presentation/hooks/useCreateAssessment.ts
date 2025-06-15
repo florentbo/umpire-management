@@ -1,24 +1,19 @@
 import { useMutation } from '@tanstack/react-query';
 import { CreateAssessmentUseCase, CreateAssessmentRequest, CreateAssessmentResponse } from '../../application/usecases/CreateAssessmentUseCase';
 import { DIContainer } from '../../infrastructure/di/Container';
-import { MockAssessmentRepository, MockMatchReportRepository } from '../../infrastructure/repositories/MockAssessmentRepository';
-import { AssessmentService } from '../../domain/services/AssessmentService';
+import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
-// Create a mock-based container for development
-const createMockContainer = (): DIContainer => {
-  const mockAssessmentRepo = new MockAssessmentRepository();
-  const mockMatchReportRepo = new MockMatchReportRepository();
-  const assessmentService = new AssessmentService(mockAssessmentRepo, mockMatchReportRepo);
-  
-  return {
-    getAssessmentService: () => assessmentService,
-    getCreateAssessmentUseCase: () => new CreateAssessmentUseCase(assessmentService)
-  };
+// Create a Supabase-based container for production
+const createSupabaseContainer = (): DIContainer => {
+  return new DIContainer({
+    useSupabase: true,
+    supabaseClient: supabase
+  });
 };
 
-const container = createMockContainer();
+const container = createSupabaseContainer();
 
 export function useCreateAssessment() {
   const { t } = useTranslation('common');
