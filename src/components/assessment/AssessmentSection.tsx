@@ -31,7 +31,7 @@ export function AssessmentSection({
   currentScore, 
   hasRemarks = false,
   remarks = '',
-  onRemarksChange 
+  onRemarksChange
 }: AssessmentSectionProps) {
   const { t } = useTranslation('common');
 

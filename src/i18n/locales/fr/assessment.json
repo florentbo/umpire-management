@@ -38,6 +38,9 @@
           "description": "Efficacité de la communication avec les joueurs et les entraîneurs"
         }
       }
+    },
+    "gameManagement": {
+      "title": "Gestion du Match"
     }
   },
   "titles": {
@@ -55,5 +58,9 @@
     "verticalView": "Vue Verticale",
     "sideBySide": "Côte à Côte",
     "toggleView": "Basculer la Vue"
+  },
+  "conclusion": {
+    "title": "Conclusion",
+    "placeholder": "Ajoutez votre conclusion générale de l'évaluation..."
   }
 }

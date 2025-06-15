@@ -5,6 +5,10 @@ import { useAssessmentConfig } from '@/lib/api-client';
 import { AssessmentConfig } from '../../../dist/api';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface UmpireAssessmentProps {
   umpireName: string;
@@ -38,6 +42,7 @@ export function UmpireAssessment({
   onValueChange 
 }: UmpireAssessmentProps) {
   const { t } = useTranslation(['common', 'assessment']);
+  const [conclusion, setConclusion] = useState('');
   const { data: assessmentConfig, isLoading, error } = useQuery(
     useAssessmentConfig(AssessmentConfig.level.JUNIOR)
   );
@@ -139,6 +144,24 @@ export function UmpireAssessment({
           hasRemarks={section.hasRemarks}
         />
       ))}
+
+      <Card className="w-full">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">
+            {t('assessment:conclusion.title')} <span className="text-red-500">*</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            id="assessment-conclusion"
+            placeholder={t('assessment:conclusion.placeholder')}
+            value={conclusion}
+            onChange={(e) => setConclusion(e.target.value)}
+            className="min-h-[80px] resize-none w-full"
+            required
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

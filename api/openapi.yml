@@ -164,9 +164,8 @@ components:
           items:
             $ref: '#/components/schemas/Question'
         remark:
-          type: string
-          description: Optional contextual note for the topic
-          nullable: true
+          type: boolean
+          description: Optional contextual note for the topic          
     Question:
       required:
       - answerPoints

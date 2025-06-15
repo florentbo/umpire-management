@@ -27,6 +27,8 @@
     "umpires": "Umpires",
     "remarks": "Additional Comments / Areas for Improvement:",
     "remarksPlaceholder": "Add any additional comments or observations...",
+    "conclusion": "Conclusion",
+    "conclusionPlaceholder": "Add your overall assessment conclusion...",
     "email": "Email",
     "password": "Password",
     "role": "Role",

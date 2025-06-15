@@ -20,7 +20,8 @@ const mockTopics: Topic[] = [
           { value: AnswerOption.OK, points: 1 }
         ]
       }
-    ]
+    ],
+    remark: false
   },
   {
     name: Topic.name.POSITIONING,
@@ -43,7 +44,8 @@ const mockTopics: Topic[] = [
           { value: AnswerOption.OK, points: 2 }
         ]
       }
-    ]
+    ],
+    remark: true
   }
 ];
 
