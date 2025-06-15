@@ -1,42 +1,24 @@
 import { useMutation } from '@tanstack/react-query';
 import { CreateAssessmentUseCase, CreateAssessmentRequest, CreateAssessmentResponse } from '../../application/usecases/CreateAssessmentUseCase';
 import { DIContainer } from '../../infrastructure/di/Container';
+import { MockAssessmentRepository, MockMatchReportRepository } from '../../infrastructure/repositories/MockAssessmentRepository';
+import { AssessmentService } from '../../domain/services/AssessmentService';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
-// This would be injected via context or props in a real app
-const container = new DIContainer({
-  useSupabase: false,
-  restClient: {
-    post: async (url: string, data: any) => {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) throw new Error('Network error');
-      return response.json();
-    },
-    get: async (url: string) => {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Network error');
-      return response.json();
-    },
-    put: async (url: string, data: any) => {
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) throw new Error('Network error');
-      return response.json();
-    },
-    delete: async (url: string) => {
-      const response = await fetch(url, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Network error');
-    }
-  }
-});
+// Create a mock-based container for development
+const createMockContainer = (): DIContainer => {
+  const mockAssessmentRepo = new MockAssessmentRepository();
+  const mockMatchReportRepo = new MockMatchReportRepository();
+  const assessmentService = new AssessmentService(mockAssessmentRepo, mockMatchReportRepo);
+  
+  return {
+    getAssessmentService: () => assessmentService,
+    getCreateAssessmentUseCase: () => new CreateAssessmentUseCase(assessmentService)
+  };
+};
+
+const container = createMockContainer();
 
 export function useCreateAssessment() {
   const { t } = useTranslation('common');

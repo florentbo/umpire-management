@@ -13,6 +13,7 @@ export class MockAssessmentRepository implements AssessmentRepository {
     
     // Store in memory
     assessments.set(assessment.id.value, assessment);
+    console.log('Mock: Saved assessment', assessment.id.value);
     
     return assessment;
   }
@@ -48,6 +49,7 @@ export class MockMatchReportRepository implements MatchReportRepository {
     
     // Store in memory
     matchReports.set(report.id.value, report);
+    console.log('Mock: Saved match report', report.id.value);
     
     return report;
   }
@@ -60,14 +62,14 @@ export class MockMatchReportRepository implements MatchReportRepository {
   async findByMatchId(matchId: MatchId): Promise<MatchReport[]> {
     await new Promise(resolve => setTimeout(resolve, 100));
     return Array.from(matchReports.values()).filter(
-      report => report.matchId.value === matchId.value
+      report => report.matchInfo.id.value === matchId.value
     );
   }
 
   async findByAssessor(assessorId: string): Promise<MatchReport[]> {
     await new Promise(resolve => setTimeout(resolve, 100));
     return Array.from(matchReports.values()).filter(
-      report => report.assessorId === assessorId
+      report => report.assessment.assessorId.value === assessorId
     );
   }
 }
