@@ -9,25 +9,29 @@ export function parseMatchesFromCSV(csvContent: string): Match[] {
       date,
       time,
       umpireA,
+      umpireAId,
       umpireB,
-      _venue, // Using underscore to indicate intentionally unused variable
+      umpireBId,
+      umpireManagerEmail,
+      umpireManagerId,
       homeTeam,
+      awayTeam,
       division
     ] = line.split(';');
 
-    // Parse the time to get only HH:mm format
-    const timeMatch = time.match(/(\d{2}:\d{2})/);
-    const formattedTime = timeMatch ? timeMatch[1] : time;
-
     return {
       id,
-      homeTeam,
-      awayTeam: division, // In the CSV, the division field contains the away team
-      division: division.split(' ').slice(0, -1).join(' '), // Remove the last word which is the division
       date,
-      time: formattedTime,
-      umpireA: umpireA.trim(),
-      umpireB: umpireB.trim(),
+      time: time.split('.')[0], // Remove milliseconds
+      umpireA,
+      umpireB,
+      umpireAId,
+      umpireBId,
+      umpireManagerEmail,
+      umpireManagerId,
+      homeTeam,
+      awayTeam,
+      division
     };
   });
 } 

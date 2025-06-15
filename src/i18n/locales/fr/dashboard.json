@@ -1,8 +1,8 @@
 {
   "manager": {
     "title": "Tableau de Bord Gestionnaire",
-    "showAllGames": "Afficher Tous les Matches",
-    "hideAllGames": "Masquer Tous les Matches",
+    "showAllGames": "Rapports à rédiger",
+    "hideAllGames": "Masquer les rapports",
     "findGame": "Trouver un Match",
     "quickActions": {
       "title": "Actions Rapides",

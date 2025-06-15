@@ -10,6 +10,7 @@ class AuthService {
         const user: User = {
           id: '1',
           name: email.split('@')[0],
+          email: email,
           role,
         };
         this.currentUser = user;

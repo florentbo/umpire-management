@@ -1,6 +1,7 @@
 export interface User {
   id: string;
   name: string;
+  email: string;
   role: 'umpire_manager' | 'umpire';
 }
 
@@ -13,6 +14,10 @@ export interface Match {
   time: string;
   umpireA: string;
   umpireB: string;
+  umpireAId: string;
+  umpireBId: string;
+  umpireManagerEmail: string;
+  umpireManagerId: string;
 }
 
 export interface AssessmentCriteria {

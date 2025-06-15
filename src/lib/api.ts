@@ -1,5 +1,6 @@
 import { Match, Assessment, Report } from '@/types';
 import { parseMatchesFromCSV } from './csv-parser';
+import { authService } from './auth';
 
 // Mock data for development
 const mockReports: Report[] = [
@@ -15,6 +16,10 @@ const mockReports: Report[] = [
       time: '15:00',
       umpireA: 'John Smith',
       umpireB: 'Sarah Johnson',
+      umpireAId: '123',
+      umpireBId: '456',
+      umpireManagerEmail: 'manager@example.com',
+      umpireManagerId: '789'
     },
     assessment: {
       id: '1',
@@ -61,15 +66,42 @@ async function loadCsvMatches(): Promise<Match[]> {
 }
 
 export const apiService = {
-  getMatches: async (): Promise<Match[]> => {
+  getMatches: async (filterByManager: boolean = true): Promise<Match[]> => {
     await new Promise(resolve => setTimeout(resolve, 500));
-    return loadCsvMatches();
+    const matches = await loadCsvMatches();
+    const currentUser = authService.getCurrentUser();
+
+    console.log('[getMatches] Current user:', currentUser);
+    if (matches.length > 0) {
+      console.log('[getMatches] First 3 match manager emails:', matches.slice(0, 3).map(m => m.umpireManagerEmail));
+    } else {
+      console.log('[getMatches] No matches loaded from CSV');
+    }
+
+    if (filterByManager && currentUser?.role === 'umpire_manager') {
+      const filtered = matches.filter(match => match.umpireManagerEmail === currentUser.email);
+      console.log(`[getMatches] Filtered matches for email ${currentUser.email}:`, filtered.length);
+      return filtered;
+    }
+
+    return matches;
   },
 
   getMatch: async (id: string): Promise<Match | null> => {
     await new Promise(resolve => setTimeout(resolve, 500));
     const matches = await loadCsvMatches();
-    return matches.find(match => match.id === id) || null;
+    const match = matches.find(match => match.id === id);
+    
+    if (!match) return null;
+    
+    // Check if the current user is authorized to view this match
+    const currentUser = authService.getCurrentUser();
+    if (currentUser?.role === 'umpire_manager' && 
+        match.umpireManagerEmail !== currentUser.email) {
+      return null;
+    }
+    
+    return match;
   },
 
   saveAssessment: async (assessment: Assessment): Promise<Assessment> => {

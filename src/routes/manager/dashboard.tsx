@@ -31,15 +31,15 @@ function ManagerDashboard() {
   const [searchResults, setSearchResults] = useState<Match[]>([]);
   const [showAllGames, setShowAllGames] = useState(false);
 
-  const { data: matches, isLoading: matchesLoading } = useQuery({
+  const { data: matches = [] as Match[] } = useQuery<Match[]>({
     queryKey: ['matches'],
-    queryFn: apiService.getMatches,
+    queryFn: () => apiService.getMatches(),
   });
 
   useEffect(() => {
     if (umpire.length >= 4) {
-      const filteredMatches = matches?.filter(match => 
-        match.umpireA.toLowerCase().includes(umpire.toLowerCase()) || 
+      const filteredMatches = matches?.filter(match =>
+        match.umpireA.toLowerCase().includes(umpire.toLowerCase()) ||
         match.umpireB.toLowerCase().includes(umpire.toLowerCase())
       ) || [];
       setSearchResults(filteredMatches);
@@ -51,8 +51,8 @@ function ManagerDashboard() {
   const handleFindGame = () => {
     const filteredMatches = matches?.filter(match => {
       const matchDate = format(new Date(match.date), 'yyyy-MM-dd');
-      return matchDate === searchDate && 
-             (match.umpireA.toLowerCase().includes(umpire.toLowerCase()) || 
+      return matchDate === searchDate &&
+             (match.umpireA.toLowerCase().includes(umpire.toLowerCase()) ||
               match.umpireB.toLowerCase().includes(umpire.toLowerCase()));
     }) || [];
     setSearchResults(filteredMatches);
@@ -67,9 +67,9 @@ function ManagerDashboard() {
             <Button onClick={() => setShowAllGames(!showAllGames)}>
               {showAllGames ? t('manager.hideAllGames') : t('manager.showAllGames')}
             </Button>
-            <Button onClick={() => setIsFindGameModalOpen(true)}>
+            {/*<Button onClick={() => setIsFindGameModalOpen(true)}>
               {t('manager.findGame')}
-            </Button>
+            </Button>*/}
           </div>
 
           {/* All Matches */}
@@ -80,7 +80,7 @@ function ManagerDashboard() {
                 <CardDescription>{t('manager.allMatches.description')}</CardDescription>
               </CardHeader>
               <CardContent className="w-full">
-                {matchesLoading ? (
+                {matches.length === 0 ? (
                   <div className="space-y-4 w-full">
                     {Array.from({ length: 3 }).map((_, i) => (
                       <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse w-full" />
@@ -88,7 +88,7 @@ function ManagerDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-2 w-full">
-                    {matches?.map((match) => (
+                    {matches.map((match: Match) => (
                       <Link
                         key={match.id}
                         to="/manager/assessment/$matchId"
