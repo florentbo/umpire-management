@@ -64,7 +64,7 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
 
     if (error) throw new Error(`Failed to find assessments: ${error.message}`);
     
-    return data.map(item => this.mapToAssessment(item));
+    return data.map((item: any) => this.mapToAssessment(item));
   }
 
   async update(assessment: Assessment): Promise<Assessment> {
@@ -161,7 +161,7 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
 
     if (error) throw new Error(`Failed to find match reports: ${error.message}`);
     
-    return data.map(item => {
+    return data.map((item: any) => {
       const assessment = this.mapToAssessmentFromJoin(item.assessments);
       return this.mapToMatchReport(item, assessment);
     });
@@ -178,7 +178,7 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
 
     if (error) throw new Error(`Failed to find match reports by assessor: ${error.message}`);
     
-    return data.map(item => {
+    return data.map((item: any) => {
       const assessment = this.mapToAssessmentFromJoin(item.assessments);
       return this.mapToMatchReport(item, assessment);
     });

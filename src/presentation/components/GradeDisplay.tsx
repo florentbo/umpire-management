@@ -1,6 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useTranslation } from 'react-i18next';
 
 interface GradeDisplayProps {
   totalScore: number;
@@ -11,8 +10,6 @@ interface GradeDisplayProps {
 }
 
 export function GradeDisplay({ totalScore, maxScore, percentage, level, umpireName }: GradeDisplayProps) {
-  const { t } = useTranslation('assessment');
-
   const getGradeColor = (level: string) => {
     switch (level) {
       case 'BELOW_EXPECTATION':

@@ -1,5 +1,4 @@
 import { useMutation } from '@tanstack/react-query';
-import { CreateAssessmentUseCase, CreateAssessmentRequest, CreateAssessmentResponse } from '../../application/usecases/CreateAssessmentUseCase';
 import { DIContainer } from '../../infrastructure/di/Container';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
@@ -19,8 +18,8 @@ export function useCreateAssessment() {
   const { t } = useTranslation('common');
   const createAssessmentUseCase = container.getCreateAssessmentUseCase();
 
-  return useMutation<CreateAssessmentResponse, Error, CreateAssessmentRequest>({
-    mutationFn: (request: CreateAssessmentRequest) => createAssessmentUseCase.execute(request),
+  return useMutation<any, Error, any>({
+    mutationFn: (request: any) => createAssessmentUseCase.execute(request),
     onSuccess: (response) => {
       toast.success(t('messages.success.saved'));
       console.log('Assessment created:', {

@@ -1,4 +1,4 @@
-import { Assessment, MatchId, AssessorId } from './Assessment';
+import { Assessment, MatchId } from './Assessment';
 
 export interface MatchReportId {
   value: string;

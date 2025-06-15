@@ -1,5 +1,5 @@
 import { AssessmentService, CreateAssessmentCommand } from '../../domain/services/AssessmentService';
-import { MatchReport } from '../../domain/entities/MatchReport';
+// import { MatchReport } from '../../domain/entities/MatchReport';
 
 export interface CreateAssessmentRequest {
   matchId: string;

@@ -1,7 +1,7 @@
 import { AssessmentService } from '../../domain/services/AssessmentService';
 import { CreateAssessmentUseCase } from '../../application/usecases/CreateAssessmentUseCase';
 import { SupabaseAssessmentRepository, SupabaseMatchReportRepository } from '../repositories/SupabaseAssessmentRepository';
-import { RestAssessmentRepository, RestMatchReportRepository } from '../repositories/RestAssessmentRepository';
+// import { RestAssessmentRepository } from '../repositories/RestAssessmentRepository';
 
 export interface Container {
   getAssessmentService(): AssessmentService;
@@ -21,9 +21,8 @@ export class DIContainer implements Container {
         const matchReportRepo = new SupabaseMatchReportRepository(this.config.supabaseClient);
         this.assessmentService = new AssessmentService(assessmentRepo, matchReportRepo);
       } else if (this.config.restClient) {
-        const assessmentRepo = new RestAssessmentRepository(this.config.restClient);
-        const matchReportRepo = new RestMatchReportRepository(this.config.restClient);
-        this.assessmentService = new AssessmentService(assessmentRepo, matchReportRepo);
+        // const assessmentRepo = new RestAssessmentRepository(this.config.restClient);
+        throw new Error('RestMatchReportRepository is not implemented. Use Supabase or implement the repository.');
       } else {
         throw new Error('No valid configuration provided for AssessmentService');
       }

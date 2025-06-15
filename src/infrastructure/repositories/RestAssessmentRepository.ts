@@ -1,6 +1,5 @@
-import { AssessmentRepository, MatchReportRepository } from '../../domain/repositories/AssessmentRepository';
+import { AssessmentRepository } from '../../domain/repositories/AssessmentRepository';
 import { Assessment, AssessmentId, MatchId } from '../../domain/entities/Assessment';
-import { MatchReport, MatchReportId } from '../../domain/entities/MatchReport';
 
 interface RestClient {
   post: (url: string, data: any) => Promise<any>;
@@ -118,32 +117,5 @@ export class RestAssessmentRepository implements AssessmentRepository {
       totalScore: { value: 0, maxValue: 50 },
       grade: { percentage: 0, level: 'AT_CURRENT_LEVEL' }
     };
-  }
-}
-
-export class RestMatchReportRepository implements MatchReportRepository {
-  constructor(
-    private readonly restClient: RestClient,
-    private readonly baseUrl: string = '/api/v1'
-  ) {}
-
-  async save(report: MatchReport): Promise<MatchReport> {
-    // Implementation for REST API
-    throw new Error('Not implemented');
-  }
-
-  async findById(id: MatchReportId): Promise<MatchReport | null> {
-    // Implementation for REST API
-    throw new Error('Not implemented');
-  }
-
-  async findByMatchId(matchId: MatchId): Promise<MatchReport[]> {
-    // Implementation for REST API
-    throw new Error('Not implemented');
-  }
-
-  async findByAssessor(assessorId: string): Promise<MatchReport[]> {
-    // Implementation for REST API
-    throw new Error('Not implemented');
   }
 }
