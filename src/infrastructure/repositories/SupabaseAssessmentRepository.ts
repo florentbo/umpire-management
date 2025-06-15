@@ -14,10 +14,16 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
   async save(assessment: Assessment): Promise<Assessment> {
+    // Get the current authenticated user to ensure we use the correct ID
+    const { data: { user } } = await this.supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     const data = {
       id: assessment.id.value,
       match_id: assessment.matchId.value,
-      assessor_id: assessment.assessorId.value, // Use the assessor ID from the domain layer
+      assessor_id: user.id, // Use the Supabase auth user ID instead of the domain assessor ID
       umpire_a_data: assessment.umpireA,
       umpire_b_data: assessment.umpireB,
       created_at: assessment.createdAt.toISOString(),
