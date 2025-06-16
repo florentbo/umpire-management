@@ -5,6 +5,7 @@ export interface AssessmentRepository {
   save(assessment: Assessment): Promise<Assessment>;
   findById(id: AssessmentId): Promise<Assessment | null>;
   findByMatchId(matchId: MatchId): Promise<Assessment[]>;
+  findByMatchIds(matchIds: MatchId[]): Promise<Assessment[]>;
   update(assessment: Assessment): Promise<Assessment>;
   delete(id: AssessmentId): Promise<void>;
 }
@@ -13,6 +14,7 @@ export interface MatchReportRepository {
   save(report: MatchReport): Promise<MatchReport>;
   findById(id: MatchReportId): Promise<MatchReport | null>;
   findByMatchId(matchId: MatchId): Promise<MatchReport[]>;
+  findByMatchIds(matchIds: MatchId[]): Promise<MatchReport[]>;
   findByAssessor(assessorId: string): Promise<MatchReport[]>;
-  findAll(): Promise<MatchReport[]>; // Added this method
+  findAll(): Promise<MatchReport[]>;
 }

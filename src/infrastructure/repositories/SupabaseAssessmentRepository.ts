@@ -1,6 +1,6 @@
-import { AssessmentRepository, MatchReportRepository } from '@/domain/repositories/AssessmentRepository.ts';
-import { Assessment, AssessmentId, MatchId } from '@/domain/entities/Assessment.ts';
-import { MatchReport, MatchReportId } from '@/domain/entities/MatchReport.ts';
+import { AssessmentRepository, MatchReportRepository } from '@/domain/repositories/AssessmentRepository';
+import { Assessment, AssessmentId, MatchId } from '@/domain/entities/Assessment';
+import { MatchReport, MatchReportId } from '@/domain/entities/MatchReport';
 
 // Supabase client would be injected here
 interface SupabaseClient {
@@ -54,6 +54,20 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
       .eq('match_id', matchId.value);
 
     if (error) throw new Error(`Failed to find assessments: ${error.message}`);
+
+    return data.map((item: any) => this.mapToAssessment(item));
+  }
+
+  async findByMatchIds(matchIds: MatchId[]): Promise<Assessment[]> {
+    if (matchIds.length === 0) return [];
+
+    const matchIdValues = matchIds.map(id => id.value);
+    const { data, error } = await this.supabase
+      .from('assessments')
+      .select('*')
+      .in('match_id', matchIdValues);
+
+    if (error) throw new Error(`Failed to find assessments by match IDs: ${error.message}`);
 
     return data.map((item: any) => this.mapToAssessment(item));
   }
@@ -151,6 +165,26 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
       .eq('match_id', matchId.value);
 
     if (error) throw new Error(`Failed to find match reports: ${error.message}`);
+
+    return data.map((item: any) => {
+      const assessment = this.mapToAssessmentFromJoin(item.assessments);
+      return this.mapToMatchReport(item, assessment);
+    });
+  }
+
+  async findByMatchIds(matchIds: MatchId[]): Promise<MatchReport[]> {
+    if (matchIds.length === 0) return [];
+
+    const matchIdValues = matchIds.map(id => id.value);
+    const { data, error } = await this.supabase
+      .from('match_reports')
+      .select(`
+        *,
+        assessments (*)
+      `)
+      .in('match_id', matchIdValues);
+
+    if (error) throw new Error(`Failed to find match reports by match IDs: ${error.message}`);
 
     return data.map((item: any) => {
       const assessment = this.mapToAssessmentFromJoin(item.assessments);

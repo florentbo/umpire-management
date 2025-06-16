@@ -13,8 +13,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Match } from '@/types';
-import { FileText, Calendar, User } from 'lucide-react';
+import { FileText, Calendar, User, ClipboardList } from 'lucide-react';
 import { useGetAllReports } from '@/presentation/hooks/useGetAllReports';
+import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
+import { ReportStatus } from '@/domain/entities/MatchReportStatus';
 
 export const Route = createFileRoute('/manager/dashboard')({
   beforeLoad: () => {
@@ -28,12 +30,14 @@ export const Route = createFileRoute('/manager/dashboard')({
 
 function ManagerDashboard() {
   const { t } = useTranslation('dashboard');
+  const user = authService.getCurrentUser();
   const [isFindGameModalOpen, setIsFindGameModalOpen] = useState(false);
   const [searchDate, setSearchDate] = useState('');
   const [umpire, setUmpire] = useState('');
   const [searchResults, setSearchResults] = useState<Match[]>([]);
   const [showAllGames, setShowAllGames] = useState(false);
   const [showAllReports, setShowAllReports] = useState(false);
+  const [showMyMatches, setShowMyMatches] = useState(false);
 
   const { data: matches = [] as Match[] } = useQuery<Match[]>({
     queryKey: ['matches'],
@@ -41,6 +45,8 @@ function ManagerDashboard() {
   });
 
   const { data: allReportsData, isLoading: loadingReports, refetch: refetchReports } = useGetAllReports();
+
+  const { data: myMatchesData, isLoading: loadingMyMatches, refetch: refetchMyMatches } = useGetManagerMatchesWithStatus(user?.id || '');
 
   useEffect(() => {
     if (umpire.length >= 4) {
@@ -71,6 +77,13 @@ function ManagerDashboard() {
     setShowAllReports(!showAllReports);
   };
 
+  const handleShowMyMatches = () => {
+    if (!showMyMatches) {
+      refetchMyMatches();
+    }
+    setShowMyMatches(!showMyMatches);
+  };
+
   const getGradeColor = (level: string) => {
     switch (level) {
       case 'BELOW_EXPECTATION':
@@ -97,6 +110,19 @@ function ManagerDashboard() {
     }
   };
 
+  const getStatusBadge = (status: ReportStatus) => {
+    switch (status) {
+      case ReportStatus.NONE:
+        return <Badge variant="outline" className="text-gray-600">Aucun rapport</Badge>;
+      case ReportStatus.DRAFT:
+        return <Badge variant="outline" className="text-orange-600 border-orange-200">Brouillon</Badge>;
+      case ReportStatus.PUBLISHED:
+        return <Badge variant="outline" className="text-green-600 border-green-200">Publié</Badge>;
+      default:
+        return <Badge variant="outline">Inconnu</Badge>;
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-gray-50">
       <Header title={t('manager.title')} />
@@ -114,7 +140,87 @@ function ManagerDashboard() {
               <FileText className="h-4 w-4 mr-2" />
               {loadingReports ? 'Chargement...' : showAllReports ? 'Masquer les rapports' : 'Voir tous les rapports'}
             </Button>
+            <Button 
+              onClick={handleShowMyMatches} 
+              disabled={loadingMyMatches}
+              variant="outline"
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              {loadingMyMatches ? 'Chargement...' : showMyMatches ? 'Masquer mes matches' : 'Mes matches avec statut'}
+            </Button>
           </div>
+
+          {/* My Matches with Status Section */}
+          {showMyMatches && (
+            <Card className="w-full">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <ClipboardList className="h-5 w-5" />
+                  <span>Mes Matches avec Statut des Rapports</span>
+                </CardTitle>
+                <CardDescription>
+                  Vos matches assignés avec le statut des rapports d'évaluation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="w-full">
+                {loadingMyMatches ? (
+                  <div className="space-y-4 w-full">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="h-24 bg-gray-100 rounded-lg animate-pulse w-full" />
+                    ))}
+                  </div>
+                ) : !myMatchesData?.matches || myMatchesData.matches.length === 0 ? (
+                  <div className="text-center py-12 w-full">
+                    <ClipboardList className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500 text-lg">Aucun match assigné</p>
+                    <p className="text-sm text-gray-400 mt-2">Les matches qui vous sont assignés apparaîtront ici</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 w-full">
+                    {myMatchesData.matches.map((matchWithStatus) => (
+                      <Card key={matchWithStatus.match.id.value} className="border-l-4 border-l-blue-500 w-full">
+                        <CardContent className="p-4 w-full">
+                          <div className="flex justify-between items-start w-full">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-lg">
+                                {matchWithStatus.match.homeTeam} vs {matchWithStatus.match.awayTeam}
+                              </div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {matchWithStatus.match.division}
+                              </div>
+                              <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                                <div className="flex items-center space-x-1">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>{format(new Date(matchWithStatus.match.date), 'MMM d, yyyy')}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <User className="h-3 w-3" />
+                                  <span>{matchWithStatus.match.umpireAName} & {matchWithStatus.match.umpireBName}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end space-y-2 ml-4">
+                              {getStatusBadge(matchWithStatus.reportStatus)}
+                              {matchWithStatus.canEdit && (
+                                <Link
+                                  to="/manager/assessment/$matchId"
+                                  params={{ matchId: matchWithStatus.match.id.value }}
+                                >
+                                  <Button size="sm" variant="outline">
+                                    {matchWithStatus.reportStatus === ReportStatus.NONE ? 'Créer' : 'Modifier'}
+                                  </Button>
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* All Reports Section */}
           {showAllReports && (

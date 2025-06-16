@@ -13,6 +13,7 @@ export interface MatchInfo {
   time: string;
   umpireAName: string;
   umpireBName: string;
+  umpireManagerId: string;
 }
 
 export class MatchReport {
