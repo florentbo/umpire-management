@@ -121,7 +121,8 @@ function AssessmentPage() {
         date: match.date,
         time: match.time,
         umpireAName: match.umpireA,
-        umpireBName: match.umpireB
+        umpireBName: match.umpireB,
+        umpireManagerId: match.umpireManagerId // Added this required field
       },
       umpireAAssessment: {
         umpireId: match.umpireAId,

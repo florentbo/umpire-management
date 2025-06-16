@@ -1,5 +1,6 @@
 import { AssessmentService, CreateAssessmentCommand } from '../../domain/services/AssessmentService';
-// import { MatchReport } from '../../domain/entities/MatchReport';
+import { MatchInfo } from '../../domain/entities/MatchReport';
+import { MatchId } from '../../domain/entities/Assessment';
 
 export interface CreateAssessmentRequest {
   matchId: string;
@@ -12,6 +13,7 @@ export interface CreateAssessmentRequest {
     time: string;
     umpireAName: string;
     umpireBName: string;
+    umpireManagerId: string; // Added this required field
   };
   umpireAAssessment: {
     umpireId: string;
@@ -80,10 +82,23 @@ export class CreateAssessmentUseCase {
       maxScore: this.calculateMaxScoreForTopic(topic.topicName)
     }));
 
+    // Create proper domain MatchInfo entity
+    const matchInfo: MatchInfo = {
+      id: { value: request.matchId } as MatchId,
+      homeTeam: request.matchInfo.homeTeam,
+      awayTeam: request.matchInfo.awayTeam,
+      division: request.matchInfo.division,
+      date: request.matchInfo.date,
+      time: request.matchInfo.time,
+      umpireAName: request.matchInfo.umpireAName,
+      umpireBName: request.matchInfo.umpireBName,
+      umpireManagerId: request.matchInfo.umpireManagerId
+    };
+
     const command: CreateAssessmentCommand = {
       matchId: request.matchId,
       assessorId: request.assessorId,
-      matchInfo: request.matchInfo,
+      matchInfo, // Use the properly structured MatchInfo
       umpireAData: {
         umpireId: { value: request.umpireAAssessment.umpireId },
         topics: umpireATopics,

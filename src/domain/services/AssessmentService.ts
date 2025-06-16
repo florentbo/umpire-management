@@ -5,7 +5,7 @@ import { AssessmentRepository, MatchReportRepository } from '../repositories/Ass
 export interface CreateAssessmentCommand {
   matchId: string;
   assessorId: string;
-  matchInfo: Omit<MatchInfo, 'id'>;
+  matchInfo: MatchInfo; // Use the proper domain entity
   umpireAData: Omit<UmpireAssessment, 'totalScore' | 'grade'>;
   umpireBData: Omit<UmpireAssessment, 'totalScore' | 'grade'>;
 }
@@ -37,13 +37,8 @@ export class AssessmentService {
     // Save the assessment
     const savedAssessment = await this.assessmentRepository.save(assessment);
 
-    // Create and save the match report
-    const matchInfo: MatchInfo = {
-      id: matchId,
-      ...command.matchInfo
-    };
-
-    const matchReport = MatchReport.create(matchInfo, savedAssessment);
+    // Create and save the match report using the provided MatchInfo
+    const matchReport = MatchReport.create(command.matchInfo, savedAssessment);
     return await this.matchReportRepository.save(matchReport);
   }
 
