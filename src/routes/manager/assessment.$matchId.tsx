@@ -11,10 +11,12 @@ import { authService } from '@/lib/auth';
 import { useCreateAssessment } from '@/presentation/hooks/useCreateAssessment';
 import { useSaveDraftAssessment } from '@/presentation/hooks/useSaveDraftAssessment';
 import { useLoadDraftAssessment } from '@/presentation/hooks/useLoadDraftAssessment';
+import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
 import { CreateAssessmentRequest } from '@/application/usecases/CreateAssessmentUseCase';
 import { SaveDraftAssessmentRequest } from '@/application/usecases/SaveDraftAssessmentUseCase';
+import { ReportStatus } from '@/domain/entities/MatchReportStatus';
 import { format } from 'date-fns';
-import { ToggleLeft, ToggleRight, AlertCircle, CheckCircle, Send, FileText, Clock } from 'lucide-react';
+import { ToggleLeft, ToggleRight, AlertCircle, CheckCircle, Send, FileText, Clock, Eye, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useAssessmentConfig } from '@/lib/api-client';
@@ -48,6 +50,7 @@ function AssessmentPage() {
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus>(AssessmentStatus.NONE);
   const [assessmentResult, setAssessmentResult] = useState<any>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
 
   // Dynamic state based on assessment config
   const [umpireAScores, setUmpireAScores] = useState<Record<string, number>>({});
@@ -81,11 +84,29 @@ function AssessmentPage() {
     user?.id || ''
   );
 
-  const isLoading = matchLoading || configLoading || draftLoading;
+  // Check if this match has a published report
+  const { data: matchStatusData, isLoading: statusLoading } = useGetManagerMatchesWithStatus(user?.id || '');
+
+  const isLoading = matchLoading || configLoading || draftLoading || statusLoading;
+
+  // Check if the current match has a published report
+  useEffect(() => {
+    if (matchStatusData?.matches && matchId) {
+      const currentMatch = matchStatusData.matches.find(
+        m => m.match.id.value === matchId
+      );
+      
+      if (currentMatch?.reportStatus === ReportStatus.PUBLISHED) {
+        setIsReadOnlyMode(true);
+        setAssessmentStatus(AssessmentStatus.PUBLISHED);
+        toast.info('Ce rapport a été publié et est en mode lecture seule');
+      }
+    }
+  }, [matchStatusData, matchId]);
 
   // Load existing draft data when available
   useEffect(() => {
-    if (existingDraft && assessmentConfig) {
+    if (existingDraft && assessmentConfig && !isReadOnlyMode) {
       console.log('Loading existing draft:', existingDraft);
 
       setCurrentDraftId(existingDraft.assessmentId);
@@ -125,25 +146,25 @@ function AssessmentPage() {
       setHasUnsavedChanges(false);
       toast.success('Brouillon chargé depuis la base de données');
     }
-  }, [existingDraft, assessmentConfig]);
+  }, [existingDraft, assessmentConfig, isReadOnlyMode]);
 
-  // Track changes for auto-save indication
+  // Track changes for auto-save indication (only if not read-only)
   useEffect(() => {
-    if (assessmentConfig && assessmentStatus !== AssessmentStatus.PUBLISHED) {
+    if (assessmentConfig && assessmentStatus !== AssessmentStatus.PUBLISHED && !isReadOnlyMode) {
       setHasUnsavedChanges(true);
     }
-  }, [umpireAScores, umpireAValues, umpireAConclusion, umpireBScores, umpireBValues, umpireBConclusion, assessmentConfig, assessmentStatus]);
+  }, [umpireAScores, umpireAValues, umpireAConclusion, umpireBScores, umpireBValues, umpireBConclusion, assessmentConfig, assessmentStatus, isReadOnlyMode]);
 
-  // Auto-save draft every 30 seconds if there are changes
+  // Auto-save draft every 30 seconds if there are changes (only if not read-only)
   useEffect(() => {
-    if (hasUnsavedChanges && assessmentStatus !== AssessmentStatus.PUBLISHED) {
+    if (hasUnsavedChanges && assessmentStatus !== AssessmentStatus.PUBLISHED && !isReadOnlyMode) {
       const autoSaveTimer = setTimeout(() => {
         handleSaveDraft();
       }, 30000); // 30 seconds
 
       return () => clearTimeout(autoSaveTimer);
     }
-  }, [hasUnsavedChanges, assessmentStatus]);
+  }, [hasUnsavedChanges, assessmentStatus, isReadOnlyMode]);
 
   // Validation function for publish
   const validateForPublish = () => {
@@ -203,8 +224,30 @@ function AssessmentPage() {
     }));
   };
 
+  const calculateGrade = (scores: Record<string, number>) => {
+    if (!assessmentConfig) return { totalScore: 0, maxScore: 0, percentage: 0, level: 'AT_CURRENT_LEVEL' };
+
+    const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
+    const maxScore = assessmentConfig.topics.reduce((sum, topic) => 
+      sum + topic.questions.reduce((topicSum, question) => 
+        topicSum + Math.max(...question.answerPoints.map(ap => ap.points)), 0), 0);
+    
+    const percentage = (totalScore / maxScore) * 100;
+    
+    let level: string;
+    if (percentage < 60) {
+      level = 'BELOW_EXPECTATION';
+    } else if (percentage >= 60 && percentage < 70) {
+      level = 'AT_CURRENT_LEVEL';
+    } else {
+      level = 'ABOVE_EXPECTATION';
+    }
+
+    return { totalScore, maxScore, percentage, level };
+  };
+
   const handleSaveDraft = async () => {
-    if (!match || !assessmentConfig || !user) return;
+    if (!match || !assessmentConfig || !user || isReadOnlyMode) return;
 
     const request: SaveDraftAssessmentRequest = {
       matchId: match.id,
@@ -245,7 +288,7 @@ function AssessmentPage() {
   };
 
   const handlePublish = async () => {
-    if (!match || !assessmentConfig || !user) return;
+    if (!match || !assessmentConfig || !user || isReadOnlyMode) return;
 
     // Validate before publishing
     const validation = validateForPublish();
@@ -290,6 +333,7 @@ function AssessmentPage() {
       const result = await createAssessmentMutation.mutateAsync(request);
       setAssessmentResult(result);
       setAssessmentStatus(AssessmentStatus.PUBLISHED);
+      setIsReadOnlyMode(true);
       setHasUnsavedChanges(false);
       setLastSaveTime(new Date());
       toast.success('Évaluation publiée avec succès!');
@@ -301,7 +345,7 @@ function AssessmentPage() {
   };
 
   const handleNewAssessment = () => {
-    if (!assessmentConfig) return;
+    if (!assessmentConfig || isReadOnlyMode) return;
 
     const resetValues = () => {
       const values: Record<string, string> = {};
@@ -328,6 +372,7 @@ function AssessmentPage() {
     setHasUnsavedChanges(false);
     setLastSaveTime(null);
     setCurrentDraftId(null);
+    setIsReadOnlyMode(false);
     toast.success('Nouvelle évaluation créée');
   };
 
@@ -360,8 +405,19 @@ function AssessmentPage() {
   }
 
   const validation = validateForPublish();
+  const umpireAGrade = calculateGrade(umpireAScores);
+  const umpireBGrade = calculateGrade(umpireBScores);
 
   const getStatusBadge = () => {
+    if (isReadOnlyMode) {
+      return (
+        <div className="flex items-center space-x-2 text-green-600">
+          <Lock className="h-5 w-5" />
+          <span className="text-sm font-normal">Publié (Lecture seule)</span>
+        </div>
+      );
+    }
+
     switch (assessmentStatus) {
       case AssessmentStatus.DRAFT:
         return (
@@ -384,12 +440,12 @@ function AssessmentPage() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
-      <Header title={t('titles.matchAssessment')} />
+      <Header title={isReadOnlyMode ? `${t('titles.matchAssessment')} (Lecture seule)` : t('titles.matchAssessment')} />
 
       <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="w-full max-w-none space-y-8">
           {/* Match Info */}
-          <Card className="w-full">
+          <Card className={`w-full ${isReadOnlyMode ? 'border-green-200 bg-green-50' : ''}`}>
             <CardHeader>
               <CardTitle className="text-xl flex items-center justify-between">
                 <span>{match.homeTeam} vs {match.awayTeam}</span>
@@ -415,7 +471,7 @@ function AssessmentPage() {
                   <div className="text-gray-600">{match.umpireA}, {match.umpireB}</div>
                 </div>
               </div>
-              {lastSaveTime && (
+              {lastSaveTime && !isReadOnlyMode && (
                 <div className="mt-4 text-xs text-gray-500 flex items-center space-x-1">
                   <Clock className="h-3 w-3" />
                   <span>Dernière sauvegarde (BDD): {format(lastSaveTime, 'dd/MM/yyyy à HH:mm:ss')}</span>
@@ -427,8 +483,23 @@ function AssessmentPage() {
             </CardContent>
           </Card>
 
-          {/* Status Indicators */}
-          {assessmentStatus !== AssessmentStatus.PUBLISHED && (
+          {/* Read-only mode notification */}
+          {isReadOnlyMode && (
+            <Card className="border-green-200 bg-green-50 w-full">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2 text-green-700">
+                  <Eye className="h-4 w-4" />
+                  <span className="text-sm">
+                    Ce rapport a été publié et est maintenant en mode lecture seule. 
+                    Aucune modification n'est possible.
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Status Indicators - Only show if not read-only */}
+          {!isReadOnlyMode && assessmentStatus !== AssessmentStatus.PUBLISHED && (
             <>
               {/* Draft Status */}
               {assessmentStatus === AssessmentStatus.DRAFT && (
@@ -489,21 +560,21 @@ function AssessmentPage() {
             </>
           )}
 
-          {/* Grade Display - Only show when published */}
-          {assessmentStatus === AssessmentStatus.PUBLISHED && assessmentResult && (
+          {/* Grade Display - Show when published or in read-only mode */}
+          {(assessmentStatus === AssessmentStatus.PUBLISHED || isReadOnlyMode) && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
               <GradeDisplay
-                totalScore={assessmentResult.umpireAGrade.totalScore}
-                maxScore={assessmentResult.umpireAGrade.maxScore}
-                percentage={assessmentResult.umpireAGrade.percentage}
-                level={assessmentResult.umpireAGrade.level}
+                totalScore={assessmentResult?.umpireAGrade?.totalScore || umpireAGrade.totalScore}
+                maxScore={assessmentResult?.umpireAGrade?.maxScore || umpireAGrade.maxScore}
+                percentage={assessmentResult?.umpireAGrade?.percentage || umpireAGrade.percentage}
+                level={assessmentResult?.umpireAGrade?.level || umpireAGrade.level}
                 umpireName={`Arbitre A: ${match.umpireA}`}
               />
               <GradeDisplay
-                totalScore={assessmentResult.umpireBGrade.totalScore}
-                maxScore={assessmentResult.umpireBGrade.maxScore}
-                percentage={assessmentResult.umpireBGrade.percentage}
-                level={assessmentResult.umpireBGrade.level}
+                totalScore={assessmentResult?.umpireBGrade?.totalScore || umpireBGrade.totalScore}
+                maxScore={assessmentResult?.umpireBGrade?.maxScore || umpireBGrade.maxScore}
+                percentage={assessmentResult?.umpireBGrade?.percentage || umpireBGrade.percentage}
+                level={assessmentResult?.umpireBGrade?.level || umpireBGrade.level}
                 umpireName={`Arbitre B: ${match.umpireB}`}
               />
             </div>
@@ -516,14 +587,18 @@ function AssessmentPage() {
               size="sm"
               onClick={() => setIsVerticalView(!isVerticalView)}
               className="flex items-center space-x-2"
-              disabled={assessmentStatus === AssessmentStatus.PUBLISHED}
+              disabled={isReadOnlyMode}
             >
               {isVerticalView ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
               <span>{isVerticalView ? t('layout.verticalView') : t('layout.sideBySide')}</span>
             </Button>
 
             <div className="flex space-x-3">
-              {assessmentStatus === AssessmentStatus.PUBLISHED ? (
+              {isReadOnlyMode ? (
+                <Button onClick={() => router.navigate({ to: '/manager/dashboard' })}>
+                  {t('dashboard:match.info.backToDashboard')}
+                </Button>
+              ) : assessmentStatus === AssessmentStatus.PUBLISHED ? (
                 <>
                   <Button variant="outline" size="sm" onClick={handleNewAssessment}>
                     <FileText className="h-4 w-4 mr-2" />
@@ -547,8 +622,8 @@ function AssessmentPage() {
             </div>
           </div>
 
-          {/* Assessment Grid - Only show if not published */}
-          {assessmentStatus !== AssessmentStatus.PUBLISHED && (
+          {/* Assessment Grid - Only show if not in read-only mode */}
+          {!isReadOnlyMode && assessmentStatus !== AssessmentStatus.PUBLISHED && (
             <div className={`w-full ${isVerticalView ? 'space-y-8' : 'grid gap-8 grid-cols-1 xl:grid-cols-2'}`}>
               <div className="w-full" ref={umpireARef}>
                 <UmpireAssessment
@@ -584,13 +659,13 @@ function AssessmentPage() {
             </div>
           )}
 
-          {/* Assessment Summary - Show when published */}
-          {assessmentStatus === AssessmentStatus.PUBLISHED && assessmentResult && (
+          {/* Assessment Summary - Show when published or read-only */}
+          {(assessmentStatus === AssessmentStatus.PUBLISHED || isReadOnlyMode) && (
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span>Résumé de l'évaluation</span>
+                  <span>Résumé de l'évaluation {isReadOnlyMode ? '(Lecture seule)' : ''}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -599,22 +674,26 @@ function AssessmentPage() {
                     <h4 className="font-semibold mb-2">Arbitre A: {match.umpireA}</h4>
                     <p className="text-sm text-gray-600 mb-2">Conclusion: {umpireAConclusion}</p>
                     <div className="text-sm">
-                      Score: {assessmentResult.umpireAGrade.totalScore}/{assessmentResult.umpireAGrade.maxScore}
-                      ({assessmentResult.umpireAGrade.percentage.toFixed(1)}%)
+                      Score: {assessmentResult?.umpireAGrade?.totalScore || umpireAGrade.totalScore}/
+                      {assessmentResult?.umpireAGrade?.maxScore || umpireAGrade.maxScore}
+                      ({(assessmentResult?.umpireAGrade?.percentage || umpireAGrade.percentage).toFixed(1)}%)
                     </div>
                   </div>
                   <div>
                     <h4 className="font-semibold mb-2">Arbitre B: {match.umpireB}</h4>
                     <p className="text-sm text-gray-600 mb-2">Conclusion: {umpireBConclusion}</p>
                     <div className="text-sm">
-                      Score: {assessmentResult.umpireBGrade.totalScore}/{assessmentResult.umpireBGrade.maxScore}
-                      ({assessmentResult.umpireBGrade.percentage.toFixed(1)}%)
+                      Score: {assessmentResult?.umpireBGrade?.totalScore || umpireBGrade.totalScore}/
+                      {assessmentResult?.umpireBGrade?.maxScore || umpireBGrade.maxScore}
+                      ({(assessmentResult?.umpireBGrade?.percentage || umpireBGrade.percentage).toFixed(1)}%)
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 text-xs text-gray-500">
-                  Rapport ID: {assessmentResult.reportId} | Publié le: {format(new Date(assessmentResult.submittedAt), 'dd/MM/yyyy à HH:mm')}
-                </div>
+                {assessmentResult && (
+                  <div className="mt-4 text-xs text-gray-500">
+                    Rapport ID: {assessmentResult.reportId} | Publié le: {format(new Date(assessmentResult.submittedAt), 'dd/MM/yyyy à HH:mm')}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

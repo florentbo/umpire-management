@@ -3,6 +3,7 @@ import { RadioGroupCustom } from '@/components/ui/radio-group-custom';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
+import { Eye } from 'lucide-react';
 
 interface AssessmentSectionProps {
   title: string;
@@ -22,6 +23,7 @@ interface AssessmentSectionProps {
   hasRemarks?: boolean;
   remarks?: string;
   onRemarksChange?: (remarks: string) => void;
+  readOnly?: boolean; // New prop for read-only mode
 }
 
 export function AssessmentSection({ 
@@ -31,15 +33,19 @@ export function AssessmentSection({
   currentScore, 
   hasRemarks = false,
   remarks = '',
-  onRemarksChange
+  onRemarksChange,
+  readOnly = false
 }: AssessmentSectionProps) {
   const { t } = useTranslation('common');
 
   return (
-    <Card className="w-full">
+    <Card className={`w-full ${readOnly ? 'border-green-100 bg-green-25' : ''}`}>
       <CardHeader className="pb-4">
         <CardTitle className="flex justify-between items-center text-lg">
-          <span>{title}</span>
+          <span className="flex items-center space-x-2">
+            {readOnly && <Eye className="h-4 w-4 text-green-600" />}
+            <span>{title}</span>
+          </span>
           <span className="text-sm font-normal">
             {t('labels.score')}: <span className="font-bold text-blue-600">{currentScore}/{maxScore}</span>
           </span>
@@ -52,8 +58,9 @@ export function AssessmentSection({
             <RadioGroupCustom
               options={criterion.options}
               value={criterion.value}
-              onValueChange={criterion.onValueChange}
+              onValueChange={readOnly ? () => {} : criterion.onValueChange}
               className="w-full"
+              disabled={readOnly}
             />
           </div>
         ))}
@@ -65,10 +72,11 @@ export function AssessmentSection({
             </Label>
             <Textarea
               id={`remarks-${title.toLowerCase().replace(/\s+/g, '-')}`}
-              placeholder={t('labels.remarksPlaceholder')}
+              placeholder={readOnly ? '' : t('labels.remarksPlaceholder')}
               value={remarks}
-              onChange={(e) => onRemarksChange?.(e.target.value)}
-              className="min-h-[80px] resize-none w-full"
+              onChange={readOnly ? undefined : (e) => onRemarksChange?.(e.target.value)}
+              className={`min-h-[80px] resize-none w-full ${readOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+              readOnly={readOnly}
             />
           </div>
         )}

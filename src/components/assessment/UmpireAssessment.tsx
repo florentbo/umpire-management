@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAssessmentConfig } from '@/lib/api-client';
 import { AssessmentConfig } from '../../../dist/api';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Eye } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -15,6 +15,7 @@ interface UmpireAssessmentProps {
   onValueChange: (field: string, value: string) => void;
   conclusion: string;
   onConclusionChange: (conclusion: string) => void;
+  readOnly?: boolean; // New prop for read-only mode
 }
 
 // Map API topic names to translation keys
@@ -32,7 +33,8 @@ export function UmpireAssessment({
   selectedValues, 
   onValueChange,
   conclusion,
-  onConclusionChange
+  onConclusionChange,
+  readOnly = false
 }: UmpireAssessmentProps) {
   const { t } = useTranslation(['common', 'assessment']);
   const { data: assessmentConfig, isLoading, error } = useQuery(
@@ -81,7 +83,7 @@ export function UmpireAssessment({
         score: ap.points,
       })),
       value: selectedValues[question.id] || '',
-      onValueChange: (value: string) => {
+      onValueChange: readOnly ? () => {} : (value: string) => {
         onValueChange(question.id, value);
         const points = getScoreFromValue(question.id, value);
         onScoreChange(question.id, points);
@@ -110,10 +112,14 @@ export function UmpireAssessment({
   const maxTotalScore = sections.reduce((sum, section) => sum + section.maxScore, 0);
 
   return (
-    <Card className="w-full">
+    <Card className={`w-full ${readOnly ? 'border-green-200 bg-green-50' : ''}`}>
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          <span>{umpireName}</span>
+          <span className="flex items-center space-x-2">
+            {readOnly && <Eye className="h-5 w-5 text-green-600" />}
+            <span>{umpireName}</span>
+            {readOnly && <span className="text-sm font-normal text-green-600">(Lecture seule)</span>}
+          </span>
           <span className="text-sm font-normal">
             {t('common:labels.totalScore')}: <span className="font-bold text-blue-600">{totalScore}/{maxTotalScore}</span>
           </span>
@@ -128,16 +134,18 @@ export function UmpireAssessment({
             maxScore={section.maxScore}
             currentScore={section.currentScore}
             hasRemarks={section.hasRemarks}
+            readOnly={readOnly}
           />
         ))}
         
         <div className="space-y-3 pt-4 border-t border-gray-100">
           <h4 className="font-medium text-sm text-gray-700">{t('common:labels.conclusion')}</h4>
           <Textarea
-            placeholder={t('common:labels.conclusionPlaceholder')}
+            placeholder={readOnly ? '' : t('common:labels.conclusionPlaceholder')}
             value={conclusion}
-            onChange={(e) => onConclusionChange(e.target.value)}
-            className="min-h-[100px] resize-none"
+            onChange={readOnly ? undefined : (e) => onConclusionChange(e.target.value)}
+            className={`min-h-[100px] resize-none ${readOnly ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+            readOnly={readOnly}
           />
         </div>
       </CardContent>
