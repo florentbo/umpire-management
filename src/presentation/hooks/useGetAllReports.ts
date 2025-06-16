@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { DIContainer } from '@/infrastructure/di/Container.ts';
-import { supabase } from '@/lib/supabase.ts';
+import { DIContainer } from '@/infrastructure/di/Container';
+import { supabase } from '@/lib/supabase';
 
 // Create a Supabase-based container for production
 const createSupabaseContainer = (): DIContainer => {

@@ -62,7 +62,6 @@ export class DIContainer implements Container {
 
   getGetManagerMatchesWithStatusUseCase(): GetManagerMatchesWithStatusUseCase {
     if (!this.getManagerMatchesWithStatusUseCase) {
-      const assessmentService = this.getAssessmentService();
       this.getManagerMatchesWithStatusUseCase = new GetManagerMatchesWithStatusUseCase(
         this.getMatchRepository(),
         new SupabaseAssessmentRepository(this.config.supabaseClient),

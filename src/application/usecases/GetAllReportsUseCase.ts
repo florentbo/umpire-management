@@ -1,4 +1,4 @@
-import { MatchReportRepository } from '@/domain/repositories/AssessmentRepository.ts';
+import { MatchReportRepository } from '@/domain/repositories/AssessmentRepository';
 
 export interface GetAllReportsResponse {
   reports: Array<{
