@@ -7,7 +7,7 @@ import { authService } from '@/lib/auth';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { Calendar, User, ClipboardList } from 'lucide-react';
+import { Calendar, User, ClipboardList, Eye, Edit } from 'lucide-react';
 import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
 import { ReportStatus } from '@/domain/entities/MatchReportStatus';
 
@@ -46,6 +46,33 @@ function ManagerDashboard() {
       default:
         return <Badge variant="outline">Inconnu</Badge>;
     }
+  };
+
+  const getActionButton = (matchWithStatus: any) => {
+    if (!matchWithStatus.canEdit) return null;
+
+    const isPublished = matchWithStatus.reportStatus === ReportStatus.PUBLISHED;
+    
+    return (
+      <Link
+        to="/manager/assessment/$matchId"
+        params={{ matchId: matchWithStatus.match.id.value }}
+      >
+        <Button size="sm" variant={isPublished ? "secondary" : "outline"}>
+          {isPublished ? (
+            <>
+              <Eye className="h-4 w-4 mr-2" />
+              Voir
+            </>
+          ) : (
+            <>
+              <Edit className="h-4 w-4 mr-2" />
+              {matchWithStatus.reportStatus === ReportStatus.NONE ? 'Créer' : 'Modifier'}
+            </>
+          )}
+        </Button>
+      </Link>
+    );
   };
 
   return (
@@ -115,16 +142,7 @@ function ManagerDashboard() {
                             </div>
                             <div className="flex flex-col items-end space-y-2 ml-4">
                               {getStatusBadge(matchWithStatus.reportStatus)}
-                              {matchWithStatus.canEdit && (
-                                <Link
-                                  to="/manager/assessment/$matchId"
-                                  params={{ matchId: matchWithStatus.match.id.value }}
-                                >
-                                  <Button size="sm" variant="outline">
-                                    {matchWithStatus.reportStatus === ReportStatus.NONE ? 'Créer' : 'Modifier'}
-                                  </Button>
-                                </Link>
-                              )}
+                              {getActionButton(matchWithStatus)}
                             </div>
                           </div>
                         </CardContent>

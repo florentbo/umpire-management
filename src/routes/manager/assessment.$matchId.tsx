@@ -587,7 +587,6 @@ function AssessmentPage() {
               size="sm"
               onClick={() => setIsVerticalView(!isVerticalView)}
               className="flex items-center space-x-2"
-              disabled={isReadOnlyMode}
             >
               {isVerticalView ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
               <span>{isVerticalView ? t('layout.verticalView') : t('layout.sideBySide')}</span>
@@ -622,78 +621,64 @@ function AssessmentPage() {
             </div>
           </div>
 
-          {/* Assessment Grid - Only show if not in read-only mode */}
-          {!isReadOnlyMode && assessmentStatus !== AssessmentStatus.PUBLISHED && (
-            <div className={`w-full ${isVerticalView ? 'space-y-8' : 'grid gap-8 grid-cols-1 xl:grid-cols-2'}`}>
-              <div className="w-full" ref={umpireARef}>
-                <UmpireAssessment
-                  umpireName={`Arbitre A: ${match.umpireA}`}
-                  scores={umpireAScores}
-                  onScoreChange={(field, value) =>
-                    setUmpireAScores(prev => ({ ...prev, [field]: value }))
-                  }
-                  selectedValues={umpireAValues}
-                  onValueChange={(field, value) =>
-                    setUmpireAValues(prev => ({ ...prev, [field]: value }))
-                  }
-                  conclusion={umpireAConclusion}
-                  onConclusionChange={setUmpireAConclusion}
-                />
-              </div>
-
-              <div className="w-full" ref={umpireBRef}>
-                <UmpireAssessment
-                  umpireName={`Arbitre B: ${match.umpireB}`}
-                  scores={umpireBScores}
-                  onScoreChange={(field, value) =>
-                    setUmpireBScores(prev => ({ ...prev, [field]: value }))
-                  }
-                  selectedValues={umpireBValues}
-                  onValueChange={(field, value) =>
-                    setUmpireBValues(prev => ({ ...prev, [field]: value }))
-                  }
-                  conclusion={umpireBConclusion}
-                  onConclusionChange={setUmpireBConclusion}
-                />
-              </div>
+          {/* Assessment Grid - Show both in read-only and edit modes */}
+          <div className={`w-full ${isVerticalView ? 'space-y-8' : 'grid gap-8 grid-cols-1 xl:grid-cols-2'}`}>
+            <div className="w-full" ref={umpireARef}>
+              <UmpireAssessment
+                umpireName={`Arbitre A: ${match.umpireA}`}
+                scores={umpireAScores}
+                onScoreChange={(field, value) =>
+                  setUmpireAScores(prev => ({ ...prev, [field]: value }))
+                }
+                selectedValues={umpireAValues}
+                onValueChange={(field, value) =>
+                  setUmpireAValues(prev => ({ ...prev, [field]: value }))
+                }
+                conclusion={umpireAConclusion}
+                onConclusionChange={setUmpireAConclusion}
+                readOnly={isReadOnlyMode}
+              />
             </div>
-          )}
 
-          {/* Assessment Summary - Show when published or read-only */}
-          {(assessmentStatus === AssessmentStatus.PUBLISHED || isReadOnlyMode) && (
-            <Card className="w-full">
+            <div className="w-full" ref={umpireBRef}>
+              <UmpireAssessment
+                umpireName={`Arbitre B: ${match.umpireB}`}
+                scores={umpireBScores}
+                onScoreChange={(field, value) =>
+                  setUmpireBScores(prev => ({ ...prev, [field]: value }))
+                }
+                selectedValues={umpireBValues}
+                onValueChange={(field, value) =>
+                  setUmpireBValues(prev => ({ ...prev, [field]: value }))
+                }
+                conclusion={umpireBConclusion}
+                onConclusionChange={setUmpireBConclusion}
+                readOnly={isReadOnlyMode}
+              />
+            </div>
+          </div>
+
+          {/* Assessment Summary - Show additional info when published */}
+          {(assessmentStatus === AssessmentStatus.PUBLISHED || isReadOnlyMode) && assessmentResult && (
+            <Card className="w-full border-green-200 bg-green-50">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span>Résumé de l'évaluation {isReadOnlyMode ? '(Lecture seule)' : ''}</span>
+                  <span>Informations de publication</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold mb-2">Arbitre A: {match.umpireA}</h4>
-                    <p className="text-sm text-gray-600 mb-2">Conclusion: {umpireAConclusion}</p>
-                    <div className="text-sm">
-                      Score: {assessmentResult?.umpireAGrade?.totalScore || umpireAGrade.totalScore}/
-                      {assessmentResult?.umpireAGrade?.maxScore || umpireAGrade.maxScore}
-                      ({(assessmentResult?.umpireAGrade?.percentage || umpireAGrade.percentage).toFixed(1)}%)
-                    </div>
+                <div className="text-sm text-gray-600">
+                  <div className="mb-2">
+                    <strong>Rapport ID:</strong> {assessmentResult.reportId}
+                  </div>
+                  <div className="mb-2">
+                    <strong>Assessment ID:</strong> {assessmentResult.assessmentId || 'N/A'}
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Arbitre B: {match.umpireB}</h4>
-                    <p className="text-sm text-gray-600 mb-2">Conclusion: {umpireBConclusion}</p>
-                    <div className="text-sm">
-                      Score: {assessmentResult?.umpireBGrade?.totalScore || umpireBGrade.totalScore}/
-                      {assessmentResult?.umpireBGrade?.maxScore || umpireBGrade.maxScore}
-                      ({(assessmentResult?.umpireBGrade?.percentage || umpireBGrade.percentage).toFixed(1)}%)
-                    </div>
+                    <strong>Publié le:</strong> {format(new Date(assessmentResult.submittedAt), 'dd/MM/yyyy à HH:mm')}
                   </div>
                 </div>
-                {assessmentResult && (
-                  <div className="mt-4 text-xs text-gray-500">
-                    Rapport ID: {assessmentResult.reportId} | Publié le: {format(new Date(assessmentResult.submittedAt), 'dd/MM/yyyy à HH:mm')}
-                  </div>
-                )}
               </CardContent>
             </Card>
           )}

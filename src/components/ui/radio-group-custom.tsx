@@ -1,4 +1,6 @@
 import * as React from 'react';
+import * as RadioGroupPrimitive from '@radix-ui/react-radio-group';
+import { Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface RadioOption {
@@ -10,53 +12,54 @@ interface RadioOption {
 interface RadioGroupCustomProps {
   options: RadioOption[];
   value?: string;
-  onValueChange: (value: string) => void;
+  onValueChange?: (value: string) => void;
   className?: string;
-  disabled?: boolean; // New prop for disabled state
+  disabled?: boolean;
 }
 
-export function RadioGroupCustom({ 
-  options, 
-  value, 
-  onValueChange, 
-  className,
-  disabled = false
-}: RadioGroupCustomProps) {
+const RadioGroupCustom = React.forwardRef<
+  React.ElementRef<typeof RadioGroupPrimitive.Root>,
+  RadioGroupCustomProps
+>(({ className, options, value, onValueChange, disabled = false, ...props }, ref) => {
   return (
-    <div className={cn('grid grid-cols-2 md:grid-cols-4 gap-3', className)}>
+    <RadioGroupPrimitive.Root
+      className={cn('grid gap-2', className)}
+      value={value}
+      onValueChange={disabled ? undefined : onValueChange}
+      ref={ref}
+      {...props}
+    >
       {options.map((option) => (
-        <label
-          key={option.value}
-          className={cn(
-            'flex flex-col items-center p-3 border rounded-lg cursor-pointer transition-all',
-            'hover:border-blue-300 hover:bg-blue-50',
-            value === option.value 
-              ? 'border-blue-500 bg-blue-100 text-blue-700' 
-              : 'border-gray-200 bg-white',
-            disabled && 'cursor-not-allowed opacity-60 hover:border-gray-200 hover:bg-white'
-          )}
-        >
-          <input
-            type="radio"
+        <div key={option.value} className="flex items-center space-x-2">
+          <RadioGroupPrimitive.Item
             value={option.value}
-            checked={value === option.value}
-            onChange={(e) => !disabled && onValueChange(e.target.value)}
-            className="sr-only"
+            id={option.value}
+            className={cn(
+              'aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              disabled && 'opacity-50 cursor-not-allowed'
+            )}
             disabled={disabled}
-          />
-          <span className="text-sm font-medium text-center">{option.label}</span>
-          <span className={cn(
-            'text-xs mt-1 px-2 py-1 rounded-full',
-            option.score > 0 
-              ? 'bg-green-100 text-green-700' 
-              : option.score < 0 
-                ? 'bg-red-100 text-red-700'
-                : 'bg-gray-100 text-gray-700'
-          )}>
-            {option.score > 0 ? '+' : ''}{option.score}
-          </span>
-        </label>
+          >
+            <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
+              <Circle className="h-2.5 w-2.5 fill-current text-current" />
+            </RadioGroupPrimitive.Indicator>
+          </RadioGroupPrimitive.Item>
+          <label
+            htmlFor={option.value}
+            className={cn(
+              'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center space-x-2',
+              disabled && 'opacity-50 cursor-not-allowed'
+            )}
+          >
+            <span>{option.label}</span>
+            <span className="text-xs text-gray-500">({option.score > 0 ? '+' : ''}{option.score})</span>
+          </label>
+        </div>
       ))}
-    </div>
+    </RadioGroupPrimitive.Root>
   );
-}
+});
+
+RadioGroupCustom.displayName = 'RadioGroupCustom';
+
+export { RadioGroupCustom };
