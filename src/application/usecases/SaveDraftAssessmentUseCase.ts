@@ -85,47 +85,60 @@ export class SaveDraftAssessmentUseCase {
       umpireManagerId: request.matchInfo.umpireManagerId
     };
 
+    const assessmentData = {
+      umpireAData: {
+        umpireId: { value: request.umpireAAssessment.umpireId },
+        topics: umpireATopics,
+        conclusion: request.umpireAAssessment.conclusion
+      },
+      umpireBData: {
+        umpireId: { value: request.umpireBAssessment.umpireId },
+        topics: umpireBTopics,
+        conclusion: request.umpireBAssessment.conclusion
+      }
+    };
+
     let assessment;
+    let isNewDraft = false;
     
     if (request.existingAssessmentId) {
-      // Update existing draft
-      assessment = await this.assessmentService.updateDraftAssessment({
-        assessmentId: request.existingAssessmentId,
-        umpireAData: {
-          umpireId: { value: request.umpireAAssessment.umpireId },
-          topics: umpireATopics,
-          conclusion: request.umpireAAssessment.conclusion
-        },
-        umpireBData: {
-          umpireId: { value: request.umpireBAssessment.umpireId },
-          topics: umpireBTopics,
-          conclusion: request.umpireBAssessment.conclusion
+      try {
+        // Try to update existing draft
+        assessment = await this.assessmentService.updateDraftAssessment({
+          assessmentId: request.existingAssessmentId,
+          ...assessmentData
+        });
+      } catch (error) {
+        // If assessment not found, create a new draft instead
+        if (error instanceof Error && error.message.includes('Assessment not found')) {
+          assessment = await this.assessmentService.createDraftAssessment({
+            matchId: request.matchId,
+            assessorId: request.assessorId,
+            matchInfo,
+            ...assessmentData
+          });
+          isNewDraft = true;
+        } else {
+          // Re-throw other errors
+          throw error;
         }
-      });
+      }
     } else {
       // Create new draft
       assessment = await this.assessmentService.createDraftAssessment({
         matchId: request.matchId,
         assessorId: request.assessorId,
         matchInfo,
-        umpireAData: {
-          umpireId: { value: request.umpireAAssessment.umpireId },
-          topics: umpireATopics,
-          conclusion: request.umpireAAssessment.conclusion
-        },
-        umpireBData: {
-          umpireId: { value: request.umpireBAssessment.umpireId },
-          topics: umpireBTopics,
-          conclusion: request.umpireBAssessment.conclusion
-        }
+        ...assessmentData
       });
+      isNewDraft = true;
     }
 
     return {
       assessmentId: assessment.id.value,
       status: 'DRAFT',
       lastSavedAt: new Date().toISOString(),
-      message: request.existingAssessmentId ? 'Brouillon mis à jour' : 'Brouillon sauvegardé'
+      message: isNewDraft ? 'Brouillon sauvegardé' : 'Brouillon mis à jour'
     };
   }
 
