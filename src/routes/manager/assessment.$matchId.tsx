@@ -14,7 +14,7 @@ import { useLoadDraftAssessment } from '@/presentation/hooks/useLoadDraftAssessm
 import { CreateAssessmentRequest } from '@/application/usecases/CreateAssessmentUseCase';
 import { SaveDraftAssessmentRequest } from '@/application/usecases/SaveDraftAssessmentUseCase';
 import { format } from 'date-fns';
-import { RotateCcw, Save, ToggleLeft, ToggleRight, AlertCircle, CheckCircle, Send, FileText, Clock } from 'lucide-react';
+import { ToggleLeft, ToggleRight, AlertCircle, CheckCircle, Send, FileText, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useAssessmentConfig } from '@/lib/api-client';
@@ -322,7 +322,7 @@ function AssessmentPage() {
     }
   };
 
-  const handleReset = () => {
+  const handleNewAssessment = () => {
     if (!assessmentConfig) return;
 
     const resetValues = () => {
@@ -350,11 +350,7 @@ function AssessmentPage() {
     setHasUnsavedChanges(false);
     setLastSaveTime(null);
     setCurrentDraftId(null);
-    toast.success(t('common:messages.success.reset'));
-  };
-
-  const handleNewAssessment = () => {
-    handleReset();
+    toast.success('Nouvelle évaluation créée');
   };
 
   if (isLoading) {
@@ -552,7 +548,7 @@ function AssessmentPage() {
               {assessmentStatus === AssessmentStatus.PUBLISHED ? (
                 <>
                   <Button variant="outline" size="sm" onClick={handleNewAssessment}>
-                    <RotateCcw className="h-4 w-4 mr-2" />
+                    <FileText className="h-4 w-4 mr-2" />
                     Nouvelle évaluation
                   </Button>
                   <Button onClick={() => router.navigate({ to: '/manager/dashboard' })}>
@@ -560,30 +556,15 @@ function AssessmentPage() {
                   </Button>
                 </>
               ) : (
-                <>
-                  <Button variant="outline" size="sm" onClick={handleReset}>
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    {t('common:buttons.reset')}
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    size="sm" 
-                    onClick={handleSaveDraft}
-                    disabled={saveDraftMutation.isPending || !hasUnsavedChanges}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {saveDraftMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder en BDD'}
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    onClick={handlePublish} 
-                    disabled={createAssessmentMutation.isPending}
-                    className={!validation.isValid ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {createAssessmentMutation.isPending ? 'Publication...' : 'Publier l\'évaluation'}
-                  </Button>
-                </>
+                <Button 
+                  size="sm" 
+                  onClick={handlePublish} 
+                  disabled={createAssessmentMutation.isPending}
+                  className={!validation.isValid ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {createAssessmentMutation.isPending ? 'Publication...' : 'Publier l\'évaluation'}
+                </Button>
               )}
             </div>
           </div>
