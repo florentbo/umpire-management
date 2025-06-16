@@ -1,26 +1,22 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect, useRef } from 'react';
 import { Header } from '@/components/layout/Header';
-import { UmpireAssessment } from '@/components/assessment/UmpireAssessment';
-import { GradeDisplay } from '@/presentation/components/GradeDisplay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiService } from '@/lib/api';
 import { authService } from '@/lib/auth';
-import { useCreateAssessment } from '@/presentation/hooks/useCreateAssessment';
-import { useSaveDraftAssessment } from '@/presentation/hooks/useSaveDraftAssessment';
-import { useLoadDraftAssessment } from '@/presentation/hooks/useLoadDraftAssessment';
 import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
-import { CreateAssessmentRequest } from '@/application/usecases/CreateAssessmentUseCase';
-import { SaveDraftAssessmentRequest } from '@/application/usecases/SaveDraftAssessmentUseCase';
 import { ReportStatus } from '@/domain/entities/MatchReportStatus';
 import { format } from 'date-fns';
-import { ToggleLeft, ToggleRight, AlertCircle, CheckCircle, Send, FileText, Clock, Eye, Lock } from 'lucide-react';
-import { toast } from 'sonner';
+import { AlertCircle, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAssessmentConfig } from '@/lib/api-client';
 import { AssessmentConfig } from '../../../dist/api';
+
+// Import the specialized components
+import { CreateAssessmentView } from '@/components/assessment/CreateAssessmentView';
+import { EditAssessmentView } from '@/components/assessment/EditAssessmentView';
+import { ReadAssessmentView } from '@/components/assessment/ReadAssessmentView';
 
 export const Route = createFileRoute('/manager/assessment/$matchId')({
   beforeLoad: () => {
@@ -32,42 +28,11 @@ export const Route = createFileRoute('/manager/assessment/$matchId')({
   component: AssessmentPage,
 });
 
-enum AssessmentStatus {
-  DRAFT = 'DRAFT',
-  PUBLISHED = 'PUBLISHED',
-  NONE = 'NONE'
-}
-
 function AssessmentPage() {
   const { matchId } = Route.useParams();
   const router = useRouter();
   const user = authService.getCurrentUser();
   const { t } = useTranslation(['assessment', 'dashboard', 'common']);
-  const createAssessmentMutation = useCreateAssessment();
-  const saveDraftMutation = useSaveDraftAssessment();
-
-  const [isVerticalView, setIsVerticalView] = useState(false);
-  const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus>(AssessmentStatus.NONE);
-  const [assessmentResult, setAssessmentResult] = useState<any>(null);
-  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
-  const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
-
-  // Dynamic state based on assessment config
-  const [umpireAScores, setUmpireAScores] = useState<Record<string, number>>({});
-  const [umpireAValues, setUmpireAValues] = useState<Record<string, string>>({});
-  const [umpireAConclusion, setUmpireAConclusion] = useState('');
-
-  const [umpireBScores, setUmpireBScores] = useState<Record<string, number>>({});
-  const [umpireBValues, setUmpireBValues] = useState<Record<string, string>>({});
-  const [umpireBConclusion, setUmpireBConclusion] = useState('');
-
-  // Draft state
-  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  // Validation refs for scrolling to invalid fields
-  const umpireARef = useRef<HTMLDivElement>(null);
-  const umpireBRef = useRef<HTMLDivElement>(null);
 
   const { data: match, isLoading: matchLoading } = useQuery({
     queryKey: ['match', matchId],
@@ -78,303 +43,10 @@ function AssessmentPage() {
     useAssessmentConfig(AssessmentConfig.level.JUNIOR)
   );
 
-  // Load existing draft
-  const { data: existingDraft, isLoading: draftLoading } = useLoadDraftAssessment(
-    matchId,
-    user?.id || ''
-  );
-
-  // Check if this match has a published report
+  // Check if this match has a published report or draft
   const { data: matchStatusData, isLoading: statusLoading } = useGetManagerMatchesWithStatus(user?.id || '');
 
-  const isLoading = matchLoading || configLoading || draftLoading || statusLoading;
-
-  // Check if the current match has a published report
-  useEffect(() => {
-    if (matchStatusData?.matches && matchId) {
-      const currentMatch = matchStatusData.matches.find(
-        m => m.match.id.value === matchId
-      );
-      
-      if (currentMatch?.reportStatus === ReportStatus.PUBLISHED) {
-        setIsReadOnlyMode(true);
-        setAssessmentStatus(AssessmentStatus.PUBLISHED);
-        toast.info('Ce rapport a été publié et est en mode lecture seule');
-      }
-    }
-  }, [matchStatusData, matchId]);
-
-  // Load existing draft data when available
-  useEffect(() => {
-    if (existingDraft && assessmentConfig && !isReadOnlyMode) {
-      console.log('Loading existing draft:', existingDraft);
-
-      setCurrentDraftId(existingDraft.assessmentId);
-      setAssessmentStatus(AssessmentStatus.DRAFT);
-      setLastSaveTime(new Date(existingDraft.lastSavedAt));
-
-      // Load Umpire A data
-      const umpireAScoresMap: Record<string, number> = {};
-      const umpireAValuesMap: Record<string, string> = {};
-
-      existingDraft.umpireAData.topics.forEach(topic => {
-        topic.questionResponses.forEach(response => {
-          umpireAValuesMap[response.questionId] = response.selectedValue;
-          umpireAScoresMap[response.questionId] = response.points;
-        });
-      });
-
-      setUmpireAScores(umpireAScoresMap);
-      setUmpireAValues(umpireAValuesMap);
-      setUmpireAConclusion(existingDraft.umpireAData.conclusion);
-
-      // Load Umpire B data
-      const umpireBScoresMap: Record<string, number> = {};
-      const umpireBValuesMap: Record<string, string> = {};
-
-      existingDraft.umpireBData.topics.forEach(topic => {
-        topic.questionResponses.forEach(response => {
-          umpireBValuesMap[response.questionId] = response.selectedValue;
-          umpireBScoresMap[response.questionId] = response.points;
-        });
-      });
-
-      setUmpireBScores(umpireBScoresMap);
-      setUmpireBValues(umpireBValuesMap);
-      setUmpireBConclusion(existingDraft.umpireBData.conclusion);
-
-      setHasUnsavedChanges(false);
-      toast.success('Brouillon chargé depuis la base de données');
-    }
-  }, [existingDraft, assessmentConfig, isReadOnlyMode]);
-
-  // Track changes for auto-save indication (only if not read-only)
-  useEffect(() => {
-    if (assessmentConfig && assessmentStatus !== AssessmentStatus.PUBLISHED && !isReadOnlyMode) {
-      setHasUnsavedChanges(true);
-    }
-  }, [umpireAScores, umpireAValues, umpireAConclusion, umpireBScores, umpireBValues, umpireBConclusion, assessmentConfig, assessmentStatus, isReadOnlyMode]);
-
-  // Auto-save draft every 30 seconds if there are changes (only if not read-only)
-  useEffect(() => {
-    if (hasUnsavedChanges && assessmentStatus !== AssessmentStatus.PUBLISHED && !isReadOnlyMode) {
-      const autoSaveTimer = setTimeout(() => {
-        handleSaveDraft();
-      }, 30000); // 30 seconds
-
-      return () => clearTimeout(autoSaveTimer);
-    }
-  }, [hasUnsavedChanges, assessmentStatus, isReadOnlyMode]);
-
-  // Validation function for publish
-  const validateForPublish = () => {
-    if (!assessmentConfig) return { isValid: false, firstInvalidField: null };
-
-    const validateUmpire = (values: Record<string, string>, conclusion: string, umpireRef: React.RefObject<HTMLDivElement>) => {
-      // Check if all questions are answered
-      for (const topic of assessmentConfig.topics) {
-        for (const question of topic.questions) {
-          if (!values[question.id] || values[question.id] === '') {
-            return { isValid: false, ref: umpireRef, field: question.text };
-          }
-        }
-      }
-
-      // Check conclusion
-      if (!conclusion.trim()) {
-        return { isValid: false, ref: umpireRef, field: 'Conclusion' };
-      }
-
-      return { isValid: true, ref: null, field: null };
-    };
-
-    // Validate Umpire A
-    const umpireAValidation = validateUmpire(umpireAValues, umpireAConclusion, umpireARef);
-    if (!umpireAValidation.isValid) {
-      return {
-        isValid: false,
-        firstInvalidField: umpireAValidation.ref,
-        fieldName: `Arbitre A - ${umpireAValidation.field}`
-      };
-    }
-
-    // Validate Umpire B
-    const umpireBValidation = validateUmpire(umpireBValues, umpireBConclusion, umpireBRef);
-    if (!umpireBValidation.isValid) {
-      return {
-        isValid: false,
-        firstInvalidField: umpireBValidation.ref,
-        fieldName: `Arbitre B - ${umpireBValidation.field}`
-      };
-    }
-
-    return { isValid: true, firstInvalidField: null, fieldName: null };
-  };
-
-  const buildTopics = (values: Record<string, string>, scores: Record<string, number>) => {
-    if (!assessmentConfig) return [];
-
-    return assessmentConfig.topics.map(topic => ({
-      topicName: topic.name,
-      questionResponses: topic.questions.map(question => ({
-        questionId: question.id,
-        selectedValue: values[question.id] || '',
-        points: scores[question.id] || 0
-      }))
-    }));
-  };
-
-  const calculateGrade = (scores: Record<string, number>) => {
-    if (!assessmentConfig) return { totalScore: 0, maxScore: 0, percentage: 0, level: 'AT_CURRENT_LEVEL' };
-
-    const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
-    const maxScore = assessmentConfig.topics.reduce((sum, topic) => 
-      sum + topic.questions.reduce((topicSum, question) => 
-        topicSum + Math.max(...question.answerPoints.map(ap => ap.points)), 0), 0);
-    
-    const percentage = (totalScore / maxScore) * 100;
-    
-    let level: string;
-    if (percentage < 60) {
-      level = 'BELOW_EXPECTATION';
-    } else if (percentage >= 60 && percentage < 70) {
-      level = 'AT_CURRENT_LEVEL';
-    } else {
-      level = 'ABOVE_EXPECTATION';
-    }
-
-    return { totalScore, maxScore, percentage, level };
-  };
-
-  const handleSaveDraft = async () => {
-    if (!match || !assessmentConfig || !user || isReadOnlyMode) return;
-
-    const request: SaveDraftAssessmentRequest = {
-      matchId: match.id,
-      assessorId: user.id,
-      matchInfo: {
-        homeTeam: match.homeTeam,
-        awayTeam: match.awayTeam,
-        division: match.division,
-        date: match.date,
-        time: match.time,
-        umpireAName: match.umpireA,
-        umpireBName: match.umpireB,
-        umpireManagerId: match.umpireManagerId
-      },
-      umpireAAssessment: {
-        umpireId: match.umpireAId,
-        topics: buildTopics(umpireAValues, umpireAScores),
-        conclusion: umpireAConclusion
-      },
-      umpireBAssessment: {
-        umpireId: match.umpireBId,
-        topics: buildTopics(umpireBValues, umpireBScores),
-        conclusion: umpireBConclusion
-      },
-      existingAssessmentId: currentDraftId || undefined
-    };
-
-    try {
-      const result = await saveDraftMutation.mutateAsync(request);
-      setCurrentDraftId(result.assessmentId);
-      setLastSaveTime(new Date(result.lastSavedAt));
-      setHasUnsavedChanges(false);
-      setAssessmentStatus(AssessmentStatus.DRAFT);
-      console.log('Draft saved to database:', result);
-    } catch (error) {
-      console.error('Failed to save draft:', error);
-    }
-  };
-
-  const handlePublish = async () => {
-    if (!match || !assessmentConfig || !user || isReadOnlyMode) return;
-
-    // Validate before publishing
-    const validation = validateForPublish();
-    if (!validation.isValid) {
-      // Scroll to first invalid field
-      if (validation.firstInvalidField?.current) {
-        validation.firstInvalidField.current.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-      }
-      toast.error(`Champ requis: ${validation.fieldName}`);
-      return;
-    }
-
-    const request: CreateAssessmentRequest = {
-      matchId: match.id,
-      assessorId: user.id,
-      matchInfo: {
-        homeTeam: match.homeTeam,
-        awayTeam: match.awayTeam,
-        division: match.division,
-        date: match.date,
-        time: match.time,
-        umpireAName: match.umpireA,
-        umpireBName: match.umpireB,
-        umpireManagerId: match.umpireManagerId
-      },
-      umpireAAssessment: {
-        umpireId: match.umpireAId,
-        topics: buildTopics(umpireAValues, umpireAScores),
-        conclusion: umpireAConclusion
-      },
-      umpireBAssessment: {
-        umpireId: match.umpireBId,
-        topics: buildTopics(umpireBValues, umpireBScores),
-        conclusion: umpireBConclusion
-      }
-    };
-
-    try {
-      const result = await createAssessmentMutation.mutateAsync(request);
-      setAssessmentResult(result);
-      setAssessmentStatus(AssessmentStatus.PUBLISHED);
-      setIsReadOnlyMode(true);
-      setHasUnsavedChanges(false);
-      setLastSaveTime(new Date());
-      toast.success('Évaluation publiée avec succès!');
-      console.log('Assessment published successfully:', result);
-    } catch (error) {
-      console.error('Failed to publish assessment:', error);
-      toast.error('Erreur lors de la publication de l\'évaluation');
-    }
-  };
-
-  const handleNewAssessment = () => {
-    if (!assessmentConfig || isReadOnlyMode) return;
-
-    const resetValues = () => {
-      const values: Record<string, string> = {};
-      const scores: Record<string, number> = {};
-      assessmentConfig.topics.forEach(topic => {
-        topic.questions.forEach(question => {
-          values[question.id] = '';
-          scores[question.id] = 0;
-        });
-      });
-      return { values, scores };
-    };
-
-    const { values: emptyValues, scores: emptyScores } = resetValues();
-
-    setUmpireAScores(emptyScores);
-    setUmpireBScores(emptyScores);
-    setUmpireAValues(emptyValues);
-    setUmpireBValues(emptyValues);
-    setUmpireAConclusion('');
-    setUmpireBConclusion('');
-    setAssessmentStatus(AssessmentStatus.NONE);
-    setAssessmentResult(null);
-    setHasUnsavedChanges(false);
-    setLastSaveTime(null);
-    setCurrentDraftId(null);
-    setIsReadOnlyMode(false);
-    toast.success('Nouvelle évaluation créée');
-  };
+  const isLoading = matchLoading || configLoading || statusLoading;
 
   if (isLoading) {
     return (
@@ -395,7 +67,8 @@ function AssessmentPage() {
       <div className="min-h-screen w-full bg-gray-50">
         <Header title={t('dashboard:match.info.notFound')} />
         <div className="w-full px-4 py-6 text-center">
-          <p className="text-gray-500">{t('dashboard:match.info.notFoundDescription')}</p>
+          <AlertCircle className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+          <p className="text-gray-500 text-lg">{t('dashboard:match.info.notFoundDescription')}</p>
           <Button onClick={() => router.navigate({ to: '/manager/dashboard' })} className="mt-4">
             {t('dashboard:match.info.backToDashboard')}
           </Button>
@@ -404,52 +77,64 @@ function AssessmentPage() {
     );
   }
 
-  const validation = validateForPublish();
-  const umpireAGrade = calculateGrade(umpireAScores);
-  const umpireBGrade = calculateGrade(umpireBScores);
+  // Determine the current status of this match
+  const currentMatch = matchStatusData?.matches?.find(
+    m => m.match.id.value === matchId
+  );
 
-  const getStatusBadge = () => {
-    if (isReadOnlyMode) {
-      return (
-        <div className="flex items-center space-x-2 text-green-600">
-          <Lock className="h-5 w-5" />
-          <span className="text-sm font-normal">Publié (Lecture seule)</span>
-        </div>
-      );
-    }
+  const reportStatus = currentMatch?.reportStatus || ReportStatus.NONE;
+  const canEdit = currentMatch?.canEdit || false;
 
-    switch (assessmentStatus) {
-      case AssessmentStatus.DRAFT:
+  // Render the appropriate view based on status
+  const renderAssessmentView = () => {
+    switch (reportStatus) {
+      case ReportStatus.PUBLISHED:
         return (
-          <div className="flex items-center space-x-2 text-orange-600">
-            <FileText className="h-5 w-5" />
-            <span className="text-sm font-normal">Brouillon (Base de données)</span>
-          </div>
+          <ReadAssessmentView
+            match={match}
+            assessmentConfig={assessmentConfig}
+            matchId={matchId}
+            assessorId={user?.id || ''}
+          />
         );
-      case AssessmentStatus.PUBLISHED:
+      
+      case ReportStatus.DRAFT:
         return (
-          <div className="flex items-center space-x-2 text-green-600">
-            <CheckCircle className="h-5 w-5" />
-            <span className="text-sm font-normal">Publié</span>
-          </div>
+          <EditAssessmentView
+            match={match}
+            assessmentConfig={assessmentConfig}
+            matchId={matchId}
+            assessorId={user?.id || ''}
+            canEdit={canEdit}
+          />
         );
+      
+      case ReportStatus.NONE:
       default:
-        return null;
+        return (
+          <CreateAssessmentView
+            match={match}
+            assessmentConfig={assessmentConfig}
+            matchId={matchId}
+            assessorId={user?.id || ''}
+            canEdit={canEdit}
+          />
+        );
     }
   };
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
-      <Header title={isReadOnlyMode ? `${t('titles.matchAssessment')} (Lecture seule)` : t('titles.matchAssessment')} />
-
+      <Header title={getPageTitle(reportStatus)} />
+      
       <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="w-full max-w-none space-y-8">
-          {/* Match Info */}
-          <Card className={`w-full ${isReadOnlyMode ? 'border-green-200 bg-green-50' : ''}`}>
+          {/* Match Info Header */}
+          <Card className={`w-full ${reportStatus === ReportStatus.PUBLISHED ? 'border-green-200 bg-green-50' : ''}`}>
             <CardHeader>
               <CardTitle className="text-xl flex items-center justify-between">
                 <span>{match.homeTeam} vs {match.awayTeam}</span>
-                {getStatusBadge()}
+                {getStatusBadge(reportStatus)}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -471,219 +156,52 @@ function AssessmentPage() {
                   <div className="text-gray-600">{match.umpireA}, {match.umpireB}</div>
                 </div>
               </div>
-              {lastSaveTime && !isReadOnlyMode && (
-                <div className="mt-4 text-xs text-gray-500 flex items-center space-x-1">
-                  <Clock className="h-3 w-3" />
-                  <span>Dernière sauvegarde (BDD): {format(lastSaveTime, 'dd/MM/yyyy à HH:mm:ss')}</span>
-                  {currentDraftId && (
-                    <span className="text-blue-600 ml-2">ID: {currentDraftId.slice(0, 8)}...</span>
-                  )}
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          {/* Read-only mode notification */}
-          {isReadOnlyMode && (
-            <Card className="border-green-200 bg-green-50 w-full">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2 text-green-700">
-                  <Eye className="h-4 w-4" />
-                  <span className="text-sm">
-                    Ce rapport a été publié et est maintenant en mode lecture seule. 
-                    Aucune modification n'est possible.
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Status Indicators - Only show if not read-only */}
-          {!isReadOnlyMode && assessmentStatus !== AssessmentStatus.PUBLISHED && (
-            <>
-              {/* Draft Status */}
-              {assessmentStatus === AssessmentStatus.DRAFT && (
-                <Card className="border-orange-200 bg-orange-50 w-full">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 text-orange-700">
-                        <FileText className="h-4 w-4" />
-                        <span className="text-sm">Brouillon sauvegardé en base de données - Vous pouvez continuer à modifier</span>
-                      </div>
-                      {validation.isValid ? (
-                        <Button
-                          size="sm"
-                          onClick={handlePublish}
-                          disabled={createAssessmentMutation.isPending}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <Send className="h-4 w-4 mr-2" />
-                          {createAssessmentMutation.isPending ? 'Publication...' : 'Publier'}
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handlePublish}
-                          disabled={createAssessmentMutation.isPending}
-                        >
-                          <AlertCircle className="h-4 w-4 mr-2" />
-                          Publier (validation requise)
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Unsaved Changes */}
-              {hasUnsavedChanges && (
-                <Card className="border-blue-200 bg-blue-50 w-full">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2 text-blue-700">
-                        <AlertCircle className="h-4 w-4" />
-                        <span className="text-sm">Modifications non sauvegardées en base de données</span>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleSaveDraft}
-                        disabled={saveDraftMutation.isPending}
-                      >
-                        {saveDraftMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder en BDD'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </>
-          )}
-
-          {/* Grade Display - Show when published or in read-only mode */}
-          {(assessmentStatus === AssessmentStatus.PUBLISHED || isReadOnlyMode) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-              <GradeDisplay
-                totalScore={assessmentResult?.umpireAGrade?.totalScore || umpireAGrade.totalScore}
-                maxScore={assessmentResult?.umpireAGrade?.maxScore || umpireAGrade.maxScore}
-                percentage={assessmentResult?.umpireAGrade?.percentage || umpireAGrade.percentage}
-                level={assessmentResult?.umpireAGrade?.level || umpireAGrade.level}
-                umpireName={`Arbitre A: ${match.umpireA}`}
-              />
-              <GradeDisplay
-                totalScore={assessmentResult?.umpireBGrade?.totalScore || umpireBGrade.totalScore}
-                maxScore={assessmentResult?.umpireBGrade?.maxScore || umpireBGrade.maxScore}
-                percentage={assessmentResult?.umpireBGrade?.percentage || umpireBGrade.percentage}
-                level={assessmentResult?.umpireBGrade?.level || umpireBGrade.level}
-                umpireName={`Arbitre B: ${match.umpireB}`}
-              />
-            </div>
-          )}
-
-          {/* Controls */}
-          <div className="flex flex-wrap gap-4 justify-between items-center w-full">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsVerticalView(!isVerticalView)}
-              className="flex items-center space-x-2"
-            >
-              {isVerticalView ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
-              <span>{isVerticalView ? t('layout.verticalView') : t('layout.sideBySide')}</span>
-            </Button>
-
-            <div className="flex space-x-3">
-              {isReadOnlyMode ? (
-                <Button onClick={() => router.navigate({ to: '/manager/dashboard' })}>
-                  {t('dashboard:match.info.backToDashboard')}
-                </Button>
-              ) : assessmentStatus === AssessmentStatus.PUBLISHED ? (
-                <>
-                  <Button variant="outline" size="sm" onClick={handleNewAssessment}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Nouvelle évaluation
-                  </Button>
-                  <Button onClick={() => router.navigate({ to: '/manager/dashboard' })}>
-                    {t('dashboard:match.info.backToDashboard')}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handlePublish}
-                  disabled={createAssessmentMutation.isPending}
-                  className={!validation.isValid ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'}
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {createAssessmentMutation.isPending ? 'Publication...' : 'Publier l\'évaluation'}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Assessment Grid - Show both in read-only and edit modes */}
-          <div className={`w-full ${isVerticalView ? 'space-y-8' : 'grid gap-8 grid-cols-1 xl:grid-cols-2'}`}>
-            <div className="w-full" ref={umpireARef}>
-              <UmpireAssessment
-                umpireName={`Arbitre A: ${match.umpireA}`}
-                scores={umpireAScores}
-                onScoreChange={(field, value) =>
-                  setUmpireAScores(prev => ({ ...prev, [field]: value }))
-                }
-                selectedValues={umpireAValues}
-                onValueChange={(field, value) =>
-                  setUmpireAValues(prev => ({ ...prev, [field]: value }))
-                }
-                conclusion={umpireAConclusion}
-                onConclusionChange={setUmpireAConclusion}
-                readOnly={isReadOnlyMode}
-              />
-            </div>
-
-            <div className="w-full" ref={umpireBRef}>
-              <UmpireAssessment
-                umpireName={`Arbitre B: ${match.umpireB}`}
-                scores={umpireBScores}
-                onScoreChange={(field, value) =>
-                  setUmpireBScores(prev => ({ ...prev, [field]: value }))
-                }
-                selectedValues={umpireBValues}
-                onValueChange={(field, value) =>
-                  setUmpireBValues(prev => ({ ...prev, [field]: value }))
-                }
-                conclusion={umpireBConclusion}
-                onConclusionChange={setUmpireBConclusion}
-                readOnly={isReadOnlyMode}
-              />
-            </div>
-          </div>
-
-          {/* Assessment Summary - Show additional info when published */}
-          {(assessmentStatus === AssessmentStatus.PUBLISHED || isReadOnlyMode) && assessmentResult && (
-            <Card className="w-full border-green-200 bg-green-50">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span>Informations de publication</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-gray-600">
-                  <div className="mb-2">
-                    <strong>Rapport ID:</strong> {assessmentResult.reportId}
-                  </div>
-                  <div className="mb-2">
-                    <strong>Assessment ID:</strong> {assessmentResult.assessmentId || 'N/A'}
-                  </div>
-                  <div>
-                    <strong>Publié le:</strong> {format(new Date(assessmentResult.submittedAt), 'dd/MM/yyyy à HH:mm')}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Render the appropriate assessment view */}
+          {renderAssessmentView()}
         </div>
       </div>
     </div>
   );
+
+  function getPageTitle(status: ReportStatus): string {
+    switch (status) {
+      case ReportStatus.PUBLISHED:
+        return `${t('titles.matchAssessment')} (Lecture seule)`;
+      case ReportStatus.DRAFT:
+        return `${t('titles.matchAssessment')} (Brouillon)`;
+      case ReportStatus.NONE:
+      default:
+        return t('titles.matchAssessment');
+    }
+  }
+
+  function getStatusBadge(status: ReportStatus) {
+    switch (status) {
+      case ReportStatus.PUBLISHED:
+        return (
+          <div className="flex items-center space-x-2 text-green-600">
+            <FileText className="h-5 w-5" />
+            <span className="text-sm font-normal">Publié</span>
+          </div>
+        );
+      case ReportStatus.DRAFT:
+        return (
+          <div className="flex items-center space-x-2 text-orange-600">
+            <FileText className="h-5 w-5" />
+            <span className="text-sm font-normal">Brouillon</span>
+          </div>
+        );
+      case ReportStatus.NONE:
+      default:
+        return (
+          <div className="flex items-center space-x-2 text-blue-600">
+            <FileText className="h-5 w-5" />
+            <span className="text-sm font-normal">Nouveau</span>
+          </div>
+        );
+    }
+  }
 }
