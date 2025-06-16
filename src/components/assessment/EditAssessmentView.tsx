@@ -10,7 +10,6 @@ import { CreateAssessmentRequest } from '@/application/usecases/CreateAssessment
 import { SaveDraftAssessmentRequest } from '@/application/usecases/SaveDraftAssessmentUseCase';
 import { ToggleLeft, ToggleRight, Send, FileText, AlertCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 
 interface EditAssessmentViewProps {
@@ -29,7 +28,6 @@ export function EditAssessmentView({
   canEdit 
 }: EditAssessmentViewProps) {
   const router = useRouter();
-  const { t } = useTranslation(['assessment', 'common']);
   const createAssessmentMutation = useCreateAssessment();
   const saveDraftMutation = useSaveDraftAssessment();
 
@@ -185,9 +183,9 @@ export function EditAssessmentView({
   };
 
   const buildTopics = (values: Record<string, string>, scores: Record<string, number>) => {
-    return assessmentConfig.topics.map(topic => ({
+    return assessmentConfig.topics.map((topic: any) => ({
       topicName: topic.name,
-      questionResponses: topic.questions.map(question => ({
+      questionResponses: topic.questions.map((question: any) => ({
         questionId: question.id,
         selectedValue: values[question.id] || '',
         points: scores[question.id] || 0

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLoadDraftAssessment } from '@/presentation/hooks/useLoadDraftAssessment';
 import { ToggleLeft, ToggleRight, Eye, CheckCircle } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 
 interface ReadAssessmentViewProps {
@@ -23,7 +22,6 @@ export function ReadAssessmentView({
   assessorId 
 }: ReadAssessmentViewProps) {
   const router = useRouter();
-  const { t } = useTranslation(['assessment', 'common']);
 
   const [isVerticalView, setIsVerticalView] = useState(false);
   
@@ -82,10 +80,10 @@ export function ReadAssessmentView({
   const calculateGrade = (scores: Record<string, number>) => {
     if (!assessmentConfig) return { totalScore: 0, maxScore: 0, percentage: 0, level: 'AT_CURRENT_LEVEL' };
 
-    const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
-    const maxScore = assessmentConfig.topics.reduce((sum, topic) => 
-      sum + topic.questions.reduce((topicSum, question) => 
-        topicSum + Math.max(...question.answerPoints.map(ap => ap.points)), 0), 0);
+    const totalScore = Object.values(scores).reduce((sum: number, score: number) => sum + score, 0);
+    const maxScore = assessmentConfig.topics.reduce((sum: number, topic: any) => 
+      sum + topic.questions.reduce((topicSum: number, question: any) => 
+        topicSum + Math.max(...question.answerPoints.map((ap: any) => ap.points)), 0), 0);
     
     const percentage = (totalScore / maxScore) * 100;
     
