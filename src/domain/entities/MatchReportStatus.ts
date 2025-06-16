@@ -27,9 +27,9 @@ export class MatchReportStatusAggregate {
 
   static create(
     matchInfo: MatchInfo,
+    currentManagerId: string,
     assessment?: Assessment,
-    report?: MatchReport,
-    currentManagerId: string
+    report?: MatchReport
   ): MatchReportStatusAggregate {
     const canEdit = matchInfo.umpireManagerId === currentManagerId;
     

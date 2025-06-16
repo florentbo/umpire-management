@@ -60,6 +60,14 @@ export class RestAssessmentRepository implements AssessmentRepository {
     return response.items.map((item: any) => this.mapToAssessment(item));
   }
 
+  async findByMatchIds(matchIds: MatchId[]): Promise<Assessment[]> {
+    if (matchIds.length === 0) return [];
+    
+    const matchIdValues = matchIds.map(id => id.value).join(',');
+    const response = await this.restClient.get(`${this.baseUrl}/assessments?matchIds=${matchIdValues}`);
+    return response.items.map((item: any) => this.mapToAssessment(item));
+  }
+
   async update(assessment: Assessment): Promise<Assessment> {
     const payload = {
       umpireA: {

@@ -39,16 +39,16 @@ export class GetManagerMatchesWithStatusUseCase {
       reports.map(r => [r.matchInfo.id.value, r])
     );
 
-    // 4. Create aggregates
+    // 4. Create aggregates with corrected parameter order
     const matchesWithStatus = matches.map(match => {
       const assessment = assessmentsByMatchId.get(match.id.value);
       const report = reportsByMatchId.get(match.id.value);
       
       return MatchReportStatusAggregate.create(
         match,
+        request.managerId, // currentManagerId comes second now
         assessment,
-        report,
-        request.managerId
+        report
       ).toPlainObject();
     });
 
