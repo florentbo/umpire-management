@@ -11,7 +11,7 @@ interface RadioGroupCustomProps {
   value?: string;
   onValueChange: (value: string) => void;
   className?: string;
-  disabled?: boolean;
+  disabled?: boolean; // Add disabled prop for read-only mode
 }
 
 export function RadioGroupCustom({
@@ -23,37 +23,96 @@ export function RadioGroupCustom({
 }: RadioGroupCustomProps) {
 
   const getOptionColors = (optionValue: string, isSelected: boolean) => {
-    switch (optionValue) {
-      case 'NOT_OK':
-        return {
-          border: isSelected ? 'border-red-500 ring-1 ring-red-500' : 'border-red-200 hover:border-red-300',
-          background: isSelected ? 'bg-red-50' : 'hover:bg-red-25',
-          radio: isSelected ? 'border-red-500 bg-red-500' : 'border-red-300',
-          text: isSelected ? 'text-red-900' : 'text-red-700'
-        };
-      case 'OK':
-        return {
-          border: isSelected ? 'border-green-500 ring-1 ring-green-500' : 'border-green-200 hover:border-green-300',
-          background: isSelected ? 'bg-green-50' : 'hover:bg-green-25',
-          radio: isSelected ? 'border-green-500 bg-green-500' : 'border-green-300',
-          text: isSelected ? 'text-green-900' : 'text-green-700'
-        };
-      case 'PARTIALLY_OK':
-      case 'PARTIAL':
-      case 'TO_BE_DONE':
-        return {
-          border: isSelected ? 'border-amber-500 ring-1 ring-amber-500' : 'border-amber-200 hover:border-amber-300',
-          background: isSelected ? 'bg-amber-50' : 'hover:bg-amber-25',
-          radio: isSelected ? 'border-amber-500 bg-amber-500' : 'border-amber-300',
-          text: isSelected ? 'text-amber-900' : 'text-amber-700'
-        };
-      default:
-        return {
-          border: isSelected ? 'border-gray-500 ring-1 ring-gray-500' : 'border-gray-200 hover:border-gray-300',
-          background: isSelected ? 'bg-gray-50' : 'hover:bg-gray-25',
-          radio: isSelected ? 'border-gray-500 bg-gray-500' : 'border-gray-300',
-          text: isSelected ? 'text-gray-900' : 'text-gray-700'
-        };
+    const baseColors = {
+      'NOT_OK': {
+        border: 'border-red-200',
+        hoverBorder: 'hover:border-red-300',
+        selectedBorder: 'border-red-500 ring-1 ring-red-500',
+        background: 'hover:bg-red-25',
+        selectedBackground: 'bg-red-50',
+        radio: 'border-red-300',
+        selectedRadio: 'border-red-500 bg-red-500',
+        text: 'text-red-700',
+        selectedText: 'text-red-900'
+      },
+      'OK': {
+        border: 'border-green-200',
+        hoverBorder: 'hover:border-green-300',
+        selectedBorder: 'border-green-500 ring-1 ring-green-500',
+        background: 'hover:bg-green-25',
+        selectedBackground: 'bg-green-50',
+        radio: 'border-green-300',
+        selectedRadio: 'border-green-500 bg-green-500',
+        text: 'text-green-700',
+        selectedText: 'text-green-900'
+      },
+      'PARTIAL': {
+        border: 'border-amber-200',
+        hoverBorder: 'hover:border-amber-300',
+        selectedBorder: 'border-amber-500 ring-1 ring-amber-500',
+        background: 'hover:bg-amber-25',
+        selectedBackground: 'bg-amber-50',
+        radio: 'border-amber-300',
+        selectedRadio: 'border-amber-500 bg-amber-500',
+        text: 'text-amber-700',
+        selectedText: 'text-amber-900'
+      },
+      'PARTIALLY_OK': {
+        border: 'border-amber-200',
+        hoverBorder: 'hover:border-amber-300',
+        selectedBorder: 'border-amber-500 ring-1 ring-amber-500',
+        background: 'hover:bg-amber-25',
+        selectedBackground: 'bg-amber-50',
+        radio: 'border-amber-300',
+        selectedRadio: 'border-amber-500 bg-amber-500',
+        text: 'text-amber-700',
+        selectedText: 'text-amber-900'
+      },
+      'TO_BE_DONE': {
+        border: 'border-amber-200',
+        hoverBorder: 'hover:border-amber-300',
+        selectedBorder: 'border-amber-500 ring-1 ring-amber-500',
+        background: 'hover:bg-amber-25',
+        selectedBackground: 'bg-amber-50',
+        radio: 'border-amber-300',
+        selectedRadio: 'border-amber-500 bg-amber-500',
+        text: 'text-amber-700',
+        selectedText: 'text-amber-900'
+      }
+    };
+
+    const colors = baseColors[optionValue as keyof typeof baseColors] || {
+      border: 'border-gray-200',
+      hoverBorder: 'hover:border-gray-300',
+      selectedBorder: 'border-gray-500 ring-1 ring-gray-500',
+      background: 'hover:bg-gray-25',
+      selectedBackground: 'bg-gray-50',
+      radio: 'border-gray-300',
+      selectedRadio: 'border-gray-500 bg-gray-500',
+      text: 'text-gray-700',
+      selectedText: 'text-gray-900'
+    };
+
+    if (disabled) {
+      return {
+        border: isSelected ? colors.selectedBorder : colors.border,
+        background: isSelected ? colors.selectedBackground : 'bg-gray-50',
+        radio: isSelected ? colors.selectedRadio : colors.radio,
+        text: isSelected ? colors.selectedText : colors.text
+      };
+    }
+
+    return {
+      border: isSelected ? colors.selectedBorder : `${colors.border} ${colors.hoverBorder}`,
+      background: isSelected ? colors.selectedBackground : colors.background,
+      radio: isSelected ? colors.selectedRadio : colors.radio,
+      text: isSelected ? colors.selectedText : colors.text
+    };
+  };
+
+  const handleOptionClick = (optionValue: string) => {
+    if (!disabled) {
+      onValueChange(optionValue);
     }
   };
 
@@ -70,16 +129,21 @@ export function RadioGroupCustom({
               "flex items-center space-x-3 p-3 rounded-lg border transition-all",
               colors.border,
               colors.background,
-              disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+              disabled ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
             )}
+            onClick={() => handleOptionClick(option.value)}
           >
             <input
               type="radio"
               value={option.value}
               checked={isSelected}
-              onChange={(e) => !disabled && onValueChange(e.target.value)}
-              className="sr-only"
+              onChange={(e) => {
+                if (!disabled) {
+                  onValueChange(e.target.value);
+                }
+              }}
               disabled={disabled}
+              className="sr-only"
             />
             <div className={cn(
               "w-4 h-4 rounded-full border-2 flex items-center justify-center",
