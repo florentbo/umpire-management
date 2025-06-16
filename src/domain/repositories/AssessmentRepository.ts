@@ -3,10 +3,15 @@ import { MatchReport, MatchReportId } from '../entities/MatchReport';
 
 export interface AssessmentRepository {
   save(assessment: Assessment): Promise<Assessment>;
+  saveAsDraft(assessment: Assessment): Promise<Assessment>;
+  saveAsPublished(assessment: Assessment): Promise<Assessment>;
   findById(id: AssessmentId): Promise<Assessment | null>;
   findByMatchId(matchId: MatchId): Promise<Assessment[]>;
   findByMatchIds(matchIds: MatchId[]): Promise<Assessment[]>;
+  findDraftByMatchAndAssessor(matchId: string, assessorId: string): Promise<Assessment | null>;
   update(assessment: Assessment): Promise<Assessment>;
+  updateDraft(assessment: Assessment): Promise<Assessment>;
+  publishDraft(assessment: Assessment): Promise<Assessment>;
   delete(id: AssessmentId): Promise<void>;
 }
 

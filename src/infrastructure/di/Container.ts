@@ -2,6 +2,8 @@ import { AssessmentService } from '@/domain/services/AssessmentService';
 import { CreateAssessmentUseCase } from '@/application/usecases/CreateAssessmentUseCase';
 import { GetAllReportsUseCase } from '@/application/usecases/GetAllReportsUseCase';
 import { GetManagerMatchesWithStatusUseCase } from '@/application/usecases/GetManagerMatchesWithStatusUseCase';
+import { SaveDraftAssessmentUseCase } from '@/application/usecases/SaveDraftAssessmentUseCase';
+import { LoadDraftAssessmentUseCase } from '@/application/usecases/LoadDraftAssessmentUseCase';
 import { MatchRepository } from '@/domain/repositories/MatchRepository';
 import { SupabaseAssessmentRepository, SupabaseMatchReportRepository } from '../repositories/SupabaseAssessmentRepository';
 import { CsvMatchRepository } from '../repositories/CsvMatchRepository';
@@ -9,6 +11,8 @@ import { CsvMatchRepository } from '../repositories/CsvMatchRepository';
 export interface Container {
   getAssessmentService(): AssessmentService;
   getCreateAssessmentUseCase(): CreateAssessmentUseCase;
+  getSaveDraftAssessmentUseCase(): SaveDraftAssessmentUseCase;
+  getLoadDraftAssessmentUseCase(): LoadDraftAssessmentUseCase;
   getGetAllReportsUseCase(): GetAllReportsUseCase;
   getMatchRepository(): MatchRepository;
   getGetManagerMatchesWithStatusUseCase(): GetManagerMatchesWithStatusUseCase;
@@ -17,6 +21,8 @@ export interface Container {
 export class DIContainer implements Container {
   private assessmentService?: AssessmentService;
   private createAssessmentUseCase?: CreateAssessmentUseCase;
+  private saveDraftAssessmentUseCase?: SaveDraftAssessmentUseCase;
+  private loadDraftAssessmentUseCase?: LoadDraftAssessmentUseCase;
   private getAllReportsUseCase?: GetAllReportsUseCase;
   private matchRepository?: MatchRepository;
   private getManagerMatchesWithStatusUseCase?: GetManagerMatchesWithStatusUseCase;
@@ -43,6 +49,20 @@ export class DIContainer implements Container {
       this.createAssessmentUseCase = new CreateAssessmentUseCase(this.getAssessmentService());
     }
     return this.createAssessmentUseCase;
+  }
+
+  getSaveDraftAssessmentUseCase(): SaveDraftAssessmentUseCase {
+    if (!this.saveDraftAssessmentUseCase) {
+      this.saveDraftAssessmentUseCase = new SaveDraftAssessmentUseCase(this.getAssessmentService());
+    }
+    return this.saveDraftAssessmentUseCase;
+  }
+
+  getLoadDraftAssessmentUseCase(): LoadDraftAssessmentUseCase {
+    if (!this.loadDraftAssessmentUseCase) {
+      this.loadDraftAssessmentUseCase = new LoadDraftAssessmentUseCase(this.getAssessmentService());
+    }
+    return this.loadDraftAssessmentUseCase;
   }
 
   getGetAllReportsUseCase(): GetAllReportsUseCase {

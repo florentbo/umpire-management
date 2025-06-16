@@ -9,9 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiService } from '@/lib/api';
 import { authService } from '@/lib/auth';
 import { useCreateAssessment } from '@/presentation/hooks/useCreateAssessment';
+import { useSaveDraftAssessment } from '@/presentation/hooks/useSaveDraftAssessment';
+import { useLoadDraftAssessment } from '@/presentation/hooks/useLoadDraftAssessment';
 import { CreateAssessmentRequest } from '@/application/usecases/CreateAssessmentUseCase';
+import { SaveDraftAssessmentRequest } from '@/application/usecases/SaveDraftAssessmentUseCase';
 import { format } from 'date-fns';
-import { RotateCcw, Save, ToggleLeft, ToggleRight, AlertCircle, CheckCircle, Send, FileText } from 'lucide-react';
+import { RotateCcw, Save, ToggleLeft, ToggleRight, AlertCircle, CheckCircle, Send, FileText, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useAssessmentConfig } from '@/lib/api-client';
@@ -39,10 +42,12 @@ function AssessmentPage() {
   const user = authService.getCurrentUser();
   const { t } = useTranslation(['assessment', 'dashboard', 'common']);
   const createAssessmentMutation = useCreateAssessment();
+  const saveDraftMutation = useSaveDraftAssessment();
   
   const [isVerticalView, setIsVerticalView] = useState(false);
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus>(AssessmentStatus.NONE);
   const [assessmentResult, setAssessmentResult] = useState<any>(null);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
 
   // Dynamic state based on assessment config
   const [umpireAScores, setUmpireAScores] = useState<Record<string, number>>({});
@@ -56,7 +61,6 @@ function AssessmentPage() {
   // Draft state
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isDraftSaving, setIsDraftSaving] = useState(false);
 
   // Validation refs for scrolling to invalid fields
   const umpireARef = useRef<HTMLDivElement>(null);
@@ -71,7 +75,57 @@ function AssessmentPage() {
     useAssessmentConfig(AssessmentConfig.level.JUNIOR)
   );
 
-  const isLoading = matchLoading || configLoading;
+  // Load existing draft
+  const { data: existingDraft, isLoading: draftLoading } = useLoadDraftAssessment(
+    matchId, 
+    user?.id || ''
+  );
+
+  const isLoading = matchLoading || configLoading || draftLoading;
+
+  // Load existing draft data when available
+  useEffect(() => {
+    if (existingDraft && assessmentConfig) {
+      console.log('Loading existing draft:', existingDraft);
+      
+      setCurrentDraftId(existingDraft.assessmentId);
+      setAssessmentStatus(AssessmentStatus.DRAFT);
+      setLastSaveTime(new Date(existingDraft.lastSavedAt));
+
+      // Load Umpire A data
+      const umpireAScoresMap: Record<string, number> = {};
+      const umpireAValuesMap: Record<string, string> = {};
+      
+      existingDraft.umpireAData.topics.forEach(topic => {
+        topic.questionResponses.forEach(response => {
+          umpireAValuesMap[response.questionId] = response.selectedValue;
+          umpireAScoresMap[response.questionId] = response.points;
+        });
+      });
+      
+      setUmpireAScores(umpireAScoresMap);
+      setUmpireAValues(umpireAValuesMap);
+      setUmpireAConclusion(existingDraft.umpireAData.conclusion);
+
+      // Load Umpire B data
+      const umpireBScoresMap: Record<string, number> = {};
+      const umpireBValuesMap: Record<string, string> = {};
+      
+      existingDraft.umpireBData.topics.forEach(topic => {
+        topic.questionResponses.forEach(response => {
+          umpireBValuesMap[response.questionId] = response.selectedValue;
+          umpireBScoresMap[response.questionId] = response.points;
+        });
+      });
+      
+      setUmpireBScores(umpireBScoresMap);
+      setUmpireBValues(umpireBValuesMap);
+      setUmpireBConclusion(existingDraft.umpireBData.conclusion);
+
+      setHasUnsavedChanges(false);
+      toast.success('Brouillon chargé depuis la base de données');
+    }
+  }, [existingDraft, assessmentConfig]);
 
   // Track changes for auto-save indication
   useEffect(() => {
@@ -158,23 +212,57 @@ function AssessmentPage() {
     return { totalScore, maxScore, percentage, level };
   };
 
+  const buildTopics = (values: Record<string, string>, scores: Record<string, number>) => {
+    if (!assessmentConfig) return [];
+    
+    return assessmentConfig.topics.map(topic => ({
+      topicName: topic.name,
+      questionResponses: topic.questions.map(question => ({
+        questionId: question.id,
+        selectedValue: values[question.id] || '',
+        points: scores[question.id] || 0
+      }))
+    }));
+  };
+
   const handleSaveDraft = async () => {
     if (!match || !assessmentConfig || !user) return;
     
-    setIsDraftSaving(true);
-    
+    const request: SaveDraftAssessmentRequest = {
+      matchId: match.id,
+      assessorId: user.id,
+      matchInfo: {
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        division: match.division,
+        date: match.date,
+        time: match.time,
+        umpireAName: match.umpireA,
+        umpireBName: match.umpireB,
+        umpireManagerId: match.umpireManagerId
+      },
+      umpireAAssessment: {
+        umpireId: match.umpireAId,
+        topics: buildTopics(umpireAValues, umpireAScores),
+        conclusion: umpireAConclusion
+      },
+      umpireBAssessment: {
+        umpireId: match.umpireBId,
+        topics: buildTopics(umpireBValues, umpireBScores),
+        conclusion: umpireBConclusion
+      },
+      existingAssessmentId: currentDraftId || undefined
+    };
+
     try {
-      // Simulate draft save (you can implement actual draft storage here)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setLastSaveTime(new Date());
+      const result = await saveDraftMutation.mutateAsync(request);
+      setCurrentDraftId(result.assessmentId);
+      setLastSaveTime(new Date(result.lastSavedAt));
       setHasUnsavedChanges(false);
       setAssessmentStatus(AssessmentStatus.DRAFT);
-      toast.success('Brouillon sauvegardé');
+      console.log('Draft saved to database:', result);
     } catch (error) {
-      toast.error('Erreur lors de la sauvegarde du brouillon');
-    } finally {
-      setIsDraftSaving(false);
+      console.error('Failed to save draft:', error);
     }
   };
 
@@ -194,16 +282,6 @@ function AssessmentPage() {
       toast.error(`Champ requis: ${validation.fieldName}`);
       return;
     }
-
-    const buildTopics = (values: Record<string, string>, scores: Record<string, number>) => 
-      assessmentConfig.topics.map(topic => ({
-        topicName: topic.name,
-        questionResponses: topic.questions.map(question => ({
-          questionId: question.id,
-          selectedValue: values[question.id] || '',
-          points: scores[question.id] || 0
-        }))
-      }));
 
     const request: CreateAssessmentRequest = {
       matchId: match.id,
@@ -271,6 +349,7 @@ function AssessmentPage() {
     setAssessmentResult(null);
     setHasUnsavedChanges(false);
     setLastSaveTime(null);
+    setCurrentDraftId(null);
     toast.success(t('common:messages.success.reset'));
   };
 
@@ -316,7 +395,7 @@ function AssessmentPage() {
         return (
           <div className="flex items-center space-x-2 text-orange-600">
             <FileText className="h-5 w-5" />
-            <span className="text-sm font-normal">Brouillon</span>
+            <span className="text-sm font-normal">Brouillon (Base de données)</span>
           </div>
         );
       case AssessmentStatus.PUBLISHED:
@@ -366,8 +445,11 @@ function AssessmentPage() {
               </div>
               {lastSaveTime && (
                 <div className="mt-4 text-xs text-gray-500 flex items-center space-x-1">
-                  <CheckCircle className="h-3 w-3" />
-                  <span>Dernière sauvegarde: {format(lastSaveTime, 'HH:mm:ss')}</span>
+                  <Clock className="h-3 w-3" />
+                  <span>Dernière sauvegarde (BDD): {format(lastSaveTime, 'dd/MM/yyyy à HH:mm:ss')}</span>
+                  {currentDraftId && (
+                    <span className="text-blue-600 ml-2">ID: {currentDraftId.slice(0, 8)}...</span>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -383,7 +465,7 @@ function AssessmentPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 text-orange-700">
                         <FileText className="h-4 w-4" />
-                        <span className="text-sm">Brouillon sauvegardé - Vous pouvez continuer à modifier</span>
+                        <span className="text-sm">Brouillon sauvegardé en base de données - Vous pouvez continuer à modifier</span>
                       </div>
                       {validation.isValid ? (
                         <Button 
@@ -418,15 +500,15 @@ function AssessmentPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 text-blue-700">
                         <AlertCircle className="h-4 w-4" />
-                        <span className="text-sm">Modifications non sauvegardées</span>
+                        <span className="text-sm">Modifications non sauvegardées en base de données</span>
                       </div>
                       <Button 
                         size="sm" 
                         variant="outline"
                         onClick={handleSaveDraft}
-                        disabled={isDraftSaving}
+                        disabled={saveDraftMutation.isPending}
                       >
-                        {isDraftSaving ? 'Sauvegarde...' : 'Sauvegarder brouillon'}
+                        {saveDraftMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder en BDD'}
                       </Button>
                     </div>
                   </CardContent>
@@ -489,10 +571,10 @@ function AssessmentPage() {
                     variant="outline"
                     size="sm" 
                     onClick={handleSaveDraft}
-                    disabled={isDraftSaving || !hasUnsavedChanges}
+                    disabled={saveDraftMutation.isPending || !hasUnsavedChanges}
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {isDraftSaving ? 'Sauvegarde...' : 'Sauvegarder brouillon'}
+                    {saveDraftMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder en BDD'}
                   </Button>
                   <Button 
                     size="sm" 

@@ -11,14 +11,20 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
   async save(assessment: Assessment): Promise<Assessment> {
+    return this.saveAsPublished(assessment);
+  }
+
+  async saveAsDraft(assessment: Assessment): Promise<Assessment> {
     const data = {
       id: assessment.id.value,
       match_id: assessment.matchId.value,
       assessor_id: assessment.assessorId.value,
       umpire_a_data: assessment.umpireA,
       umpire_b_data: assessment.umpireB,
+      status: 'DRAFT',
       created_at: assessment.createdAt.toISOString(),
-      updated_at: assessment.updatedAt?.toISOString()
+      updated_at: assessment.updatedAt?.toISOString(),
+      last_saved_at: new Date().toISOString()
     };
 
     const { data: result, error } = await this.supabase
@@ -27,7 +33,31 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
       .select()
       .single();
 
-    if (error) throw new Error(`Failed to save assessment: ${error.message}`);
+    if (error) throw new Error(`Failed to save draft assessment: ${error.message}`);
+
+    return this.mapToAssessment(result);
+  }
+
+  async saveAsPublished(assessment: Assessment): Promise<Assessment> {
+    const data = {
+      id: assessment.id.value,
+      match_id: assessment.matchId.value,
+      assessor_id: assessment.assessorId.value,
+      umpire_a_data: assessment.umpireA,
+      umpire_b_data: assessment.umpireB,
+      status: 'PUBLISHED',
+      created_at: assessment.createdAt.toISOString(),
+      updated_at: assessment.updatedAt?.toISOString(),
+      last_saved_at: new Date().toISOString()
+    };
+
+    const { data: result, error } = await this.supabase
+      .from('assessments')
+      .insert(data)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to save published assessment: ${error.message}`);
 
     return this.mapToAssessment(result);
   }
@@ -72,11 +102,31 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
     return data.map((item: any) => this.mapToAssessment(item));
   }
 
+  async findDraftByMatchAndAssessor(matchId: string, assessorId: string): Promise<Assessment | null> {
+    const { data, error } = await this.supabase
+      .from('assessments')
+      .select('*')
+      .eq('match_id', matchId)
+      .eq('assessor_id', assessorId)
+      .eq('status', 'DRAFT')
+      .order('last_saved_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null; // Not found
+      throw new Error(`Failed to find draft assessment: ${error.message}`);
+    }
+
+    return this.mapToAssessment(data);
+  }
+
   async update(assessment: Assessment): Promise<Assessment> {
     const data = {
       umpire_a_data: assessment.umpireA,
       umpire_b_data: assessment.umpireB,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      last_saved_at: new Date().toISOString()
     };
 
     const { data: result, error } = await this.supabase
@@ -87,6 +137,48 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
       .single();
 
     if (error) throw new Error(`Failed to update assessment: ${error.message}`);
+
+    return this.mapToAssessment(result);
+  }
+
+  async updateDraft(assessment: Assessment): Promise<Assessment> {
+    const data = {
+      umpire_a_data: assessment.umpireA,
+      umpire_b_data: assessment.umpireB,
+      updated_at: new Date().toISOString(),
+      last_saved_at: new Date().toISOString(),
+      status: 'DRAFT'
+    };
+
+    const { data: result, error } = await this.supabase
+      .from('assessments')
+      .update(data)
+      .eq('id', assessment.id.value)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to update draft assessment: ${error.message}`);
+
+    return this.mapToAssessment(result);
+  }
+
+  async publishDraft(assessment: Assessment): Promise<Assessment> {
+    const data = {
+      umpire_a_data: assessment.umpireA,
+      umpire_b_data: assessment.umpireB,
+      status: 'PUBLISHED',
+      updated_at: new Date().toISOString(),
+      last_saved_at: new Date().toISOString()
+    };
+
+    const { data: result, error } = await this.supabase
+      .from('assessments')
+      .update(data)
+      .eq('id', assessment.id.value)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to publish draft assessment: ${error.message}`);
 
     return this.mapToAssessment(result);
   }
@@ -199,7 +291,8 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
         *,
         assessments!inner (*)
       `)
-      .eq('assessments.assessor_id', assessorId);
+      .eq('assessments.assessor_id', assessorId)
+      .eq('assessments.status', 'PUBLISHED'); // Only published reports
 
     if (error) throw new Error(`Failed to find match reports by assessor: ${error.message}`);
 
@@ -216,6 +309,7 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
         *,
         assessments (*)
       `)
+      .eq('assessments.status', 'PUBLISHED') // Only published reports
       .order('submitted_at', { ascending: false });
 
     if (error) throw new Error(`Failed to find all match reports: ${error.message}`);
