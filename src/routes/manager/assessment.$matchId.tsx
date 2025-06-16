@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { UmpireAssessment } from '@/components/assessment/UmpireAssessment';
 import { GradeDisplay } from '@/presentation/components/GradeDisplay';
@@ -11,7 +11,7 @@ import { authService } from '@/lib/auth';
 import { useCreateAssessment } from '@/presentation/hooks/useCreateAssessment';
 import { CreateAssessmentRequest } from '@/application/usecases/CreateAssessmentUseCase';
 import { format } from 'date-fns';
-import { RotateCcw, Save, ToggleLeft, ToggleRight, AlertCircle } from 'lucide-react';
+import { RotateCcw, Save, ToggleLeft, ToggleRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useAssessmentConfig } from '@/lib/api-client';
@@ -35,7 +35,8 @@ function AssessmentPage() {
   const createAssessmentMutation = useCreateAssessment();
   
   const [isVerticalView, setIsVerticalView] = useState(false);
-  const [showGrades, setShowGrades] = useState(false);
+  const [assessmentCompleted, setAssessmentCompleted] = useState(false);
+  const [assessmentResult, setAssessmentResult] = useState<any>(null);
 
   // Dynamic state based on assessment config
   const [umpireAScores, setUmpireAScores] = useState<Record<string, number>>({});
@@ -45,6 +46,10 @@ function AssessmentPage() {
   const [umpireBScores, setUmpireBScores] = useState<Record<string, number>>({});
   const [umpireBValues, setUmpireBValues] = useState<Record<string, string>>({});
   const [umpireBConclusion, setUmpireBConclusion] = useState('');
+
+  // Auto-save state
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { data: match, isLoading: matchLoading } = useQuery({
     queryKey: ['match', matchId],
@@ -56,6 +61,13 @@ function AssessmentPage() {
   );
 
   const isLoading = matchLoading || configLoading;
+
+  // Track changes for auto-save
+  useEffect(() => {
+    if (assessmentConfig && !assessmentCompleted) {
+      setHasUnsavedChanges(true);
+    }
+  }, [umpireAScores, umpireAValues, umpireAConclusion, umpireBScores, umpireBValues, umpireBConclusion, assessmentConfig, assessmentCompleted]);
 
   // Validation function
   const isFormValid = () => {
@@ -93,7 +105,7 @@ function AssessmentPage() {
     return { totalScore, maxScore, percentage, level };
   };
 
-  const handleSave = async () => {
+  const handleSubmitAssessment = async () => {
     if (!match || !assessmentConfig || !user) return;
     
     if (!isFormValid()) {
@@ -122,7 +134,7 @@ function AssessmentPage() {
         time: match.time,
         umpireAName: match.umpireA,
         umpireBName: match.umpireB,
-        umpireManagerId: match.umpireManagerId // Added this required field
+        umpireManagerId: match.umpireManagerId
       },
       umpireAAssessment: {
         umpireId: match.umpireAId,
@@ -138,10 +150,15 @@ function AssessmentPage() {
 
     try {
       const result = await createAssessmentMutation.mutateAsync(request);
-      setShowGrades(true);
+      setAssessmentResult(result);
+      setAssessmentCompleted(true);
+      setHasUnsavedChanges(false);
+      setLastSaveTime(new Date());
+      toast.success('Évaluation soumise avec succès!');
       console.log('Assessment created successfully:', result);
     } catch (error) {
       console.error('Failed to create assessment:', error);
+      toast.error('Erreur lors de la soumission de l\'évaluation');
     }
   };
 
@@ -168,8 +185,14 @@ function AssessmentPage() {
     setUmpireBValues(emptyValues);
     setUmpireAConclusion('');
     setUmpireBConclusion('');
-    setShowGrades(false);
+    setAssessmentCompleted(false);
+    setAssessmentResult(null);
+    setHasUnsavedChanges(false);
     toast.success(t('common:messages.success.reset'));
+  };
+
+  const handleNewAssessment = () => {
+    handleReset();
   };
 
   if (isLoading) {
@@ -213,7 +236,15 @@ function AssessmentPage() {
           {/* Match Info */}
           <Card className="w-full">
             <CardHeader>
-              <CardTitle className="text-xl">{match.homeTeam} vs {match.awayTeam}</CardTitle>
+              <CardTitle className="text-xl flex items-center justify-between">
+                <span>{match.homeTeam} vs {match.awayTeam}</span>
+                {assessmentCompleted && (
+                  <div className="flex items-center space-x-2 text-green-600">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="text-sm font-normal">Évaluation terminée</span>
+                  </div>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
@@ -234,36 +265,68 @@ function AssessmentPage() {
                   <div className="text-gray-600">{match.umpireA}, {match.umpireB}</div>
                 </div>
               </div>
+              {lastSaveTime && (
+                <div className="mt-4 text-xs text-gray-500 flex items-center space-x-1">
+                  <CheckCircle className="h-3 w-3" />
+                  <span>Dernière sauvegarde: {format(lastSaveTime, 'HH:mm:ss')}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Validation Warning */}
-          {!formValid && !showGrades && (
-            <Card className="border-orange-200 bg-orange-50 w-full">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2 text-orange-700">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm">{t('common:messages.error.incompleteForm')}</span>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Status Indicators */}
+          {!assessmentCompleted && (
+            <>
+              {/* Validation Warning */}
+              {!formValid && (
+                <Card className="border-orange-200 bg-orange-50 w-full">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-2 text-orange-700">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">{t('common:messages.error.incompleteForm')}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Unsaved Changes Warning */}
+              {hasUnsavedChanges && formValid && (
+                <Card className="border-blue-200 bg-blue-50 w-full">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-blue-700">
+                        <AlertCircle className="h-4 w-4" />
+                        <span className="text-sm">Évaluation prête à être soumise</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        onClick={handleSubmitAssessment}
+                        disabled={createAssessmentMutation.isPending}
+                      >
+                        {createAssessmentMutation.isPending ? 'Soumission...' : 'Soumettre maintenant'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
 
-          {/* Grade Display */}
-          {showGrades && (
+          {/* Grade Display - Only show when assessment is completed */}
+          {assessmentCompleted && assessmentResult && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
               <GradeDisplay
-                totalScore={umpireAGrade.totalScore}
-                maxScore={umpireAGrade.maxScore}
-                percentage={umpireAGrade.percentage}
-                level={umpireAGrade.level}
+                totalScore={assessmentResult.umpireAGrade.totalScore}
+                maxScore={assessmentResult.umpireAGrade.maxScore}
+                percentage={assessmentResult.umpireAGrade.percentage}
+                level={assessmentResult.umpireAGrade.level}
                 umpireName={`Arbitre A: ${match.umpireA}`}
               />
               <GradeDisplay
-                totalScore={umpireBGrade.totalScore}
-                maxScore={umpireBGrade.maxScore}
-                percentage={umpireBGrade.percentage}
-                level={umpireBGrade.level}
+                totalScore={assessmentResult.umpireBGrade.totalScore}
+                maxScore={assessmentResult.umpireBGrade.maxScore}
+                percentage={assessmentResult.umpireBGrade.percentage}
+                level={assessmentResult.umpireBGrade.level}
                 umpireName={`Arbitre B: ${match.umpireB}`}
               />
             </div>
@@ -276,37 +339,45 @@ function AssessmentPage() {
               size="sm"
               onClick={() => setIsVerticalView(!isVerticalView)}
               className="flex items-center space-x-2"
+              disabled={assessmentCompleted}
             >
               {isVerticalView ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
               <span>{isVerticalView ? t('layout.verticalView') : t('layout.sideBySide')}</span>
             </Button>
             
             <div className="flex space-x-3">
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                <RotateCcw className="h-4 w-4 mr-2" />
-                {t('common:buttons.reset')}
-              </Button>
-              {!showGrades && (
-                <Button 
-                  size="sm" 
-                  onClick={handleSave} 
-                  disabled={createAssessmentMutation.isPending || !formValid}
-                  className={!formValid ? 'opacity-50 cursor-not-allowed' : ''}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {createAssessmentMutation.isPending ? t('common:buttons.saving') : t('common:buttons.save')}
-                </Button>
-              )}
-              {showGrades && (
-                <Button onClick={() => router.navigate({ to: '/manager/dashboard' })}>
-                  {t('dashboard:match.info.backToDashboard')}
-                </Button>
+              {assessmentCompleted ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleNewAssessment}>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Nouvelle évaluation
+                  </Button>
+                  <Button onClick={() => router.navigate({ to: '/manager/dashboard' })}>
+                    {t('dashboard:match.info.backToDashboard')}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleReset}>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    {t('common:buttons.reset')}
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={handleSubmitAssessment} 
+                    disabled={createAssessmentMutation.isPending || !formValid}
+                    className={!formValid ? 'opacity-50 cursor-not-allowed' : ''}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {createAssessmentMutation.isPending ? 'Soumission...' : 'Soumettre l\'évaluation'}
+                  </Button>
+                </>
               )}
             </div>
           </div>
 
-          {/* Assessment Grid - Only show if grades not displayed */}
-          {!showGrades && (
+          {/* Assessment Grid - Only show if assessment not completed */}
+          {!assessmentCompleted && (
             <div className={`w-full ${isVerticalView ? 'space-y-8' : 'grid gap-8 grid-cols-1 xl:grid-cols-2'}`}>
               <div className="w-full">
                 <UmpireAssessment
@@ -340,6 +411,41 @@ function AssessmentPage() {
                 />
               </div>
             </div>
+          )}
+
+          {/* Assessment Summary - Show when completed */}
+          {assessmentCompleted && assessmentResult && (
+            <Card className="w-full">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span>Résumé de l'évaluation</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold mb-2">Arbitre A: {match.umpireA}</h4>
+                    <p className="text-sm text-gray-600 mb-2">Conclusion: {umpireAConclusion}</p>
+                    <div className="text-sm">
+                      Score: {assessmentResult.umpireAGrade.totalScore}/{assessmentResult.umpireAGrade.maxScore} 
+                      ({assessmentResult.umpireAGrade.percentage.toFixed(1)}%)
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Arbitre B: {match.umpireB}</h4>
+                    <p className="text-sm text-gray-600 mb-2">Conclusion: {umpireBConclusion}</p>
+                    <div className="text-sm">
+                      Score: {assessmentResult.umpireBGrade.totalScore}/{assessmentResult.umpireBGrade.maxScore} 
+                      ({assessmentResult.umpireBGrade.percentage.toFixed(1)}%)
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 text-xs text-gray-500">
+                  Rapport ID: {assessmentResult.reportId} | Soumis le: {format(new Date(assessmentResult.submittedAt), 'dd/MM/yyyy à HH:mm')}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
