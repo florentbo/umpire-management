@@ -11,7 +11,7 @@ interface RadioGroupCustomProps {
   value?: string;
   onValueChange: (value: string) => void;
   className?: string;
-  disabled?: boolean; // Add disabled prop for read-only mode
+  disabled?: boolean;
 }
 
 export function RadioGroupCustom({
@@ -96,9 +96,11 @@ export function RadioGroupCustom({
     if (disabled) {
       return {
         border: isSelected ? colors.selectedBorder : colors.border,
-        background: isSelected ? colors.selectedBackground : 'bg-gray-50',
+        background: isSelected ? colors.selectedBackground : '',
         radio: isSelected ? colors.selectedRadio : colors.radio,
-        text: isSelected ? colors.selectedText : colors.text
+        text: isSelected ? colors.selectedText : colors.text,
+        opacity: 'opacity-60',
+        cursor: 'cursor-not-allowed'
       };
     }
 
@@ -106,7 +108,9 @@ export function RadioGroupCustom({
       border: isSelected ? colors.selectedBorder : `${colors.border} ${colors.hoverBorder}`,
       background: isSelected ? colors.selectedBackground : colors.background,
       radio: isSelected ? colors.selectedRadio : colors.radio,
-      text: isSelected ? colors.selectedText : colors.text
+      text: isSelected ? colors.selectedText : colors.text,
+      opacity: '',
+      cursor: 'cursor-pointer'
     };
   };
 
@@ -129,7 +133,8 @@ export function RadioGroupCustom({
               "flex items-center space-x-3 p-3 rounded-lg border transition-all",
               colors.border,
               colors.background,
-              disabled ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
+              colors.opacity,
+              colors.cursor
             )}
             onClick={() => handleOptionClick(option.value)}
           >
