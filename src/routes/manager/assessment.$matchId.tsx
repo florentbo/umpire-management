@@ -386,8 +386,6 @@ function AssessmentPage() {
   }
 
   const validation = validateForPublish();
-  const umpireAGrade = calculateGrade(umpireAScores);
-  const umpireBGrade = calculateGrade(umpireBScores);
 
   const getStatusBadge = () => {
     switch (assessmentStatus) {

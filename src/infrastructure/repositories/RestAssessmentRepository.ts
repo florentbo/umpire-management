@@ -15,32 +15,17 @@ export class RestAssessmentRepository implements AssessmentRepository {
   ) {}
 
   async save(assessment: Assessment): Promise<Assessment> {
-    const payload = {
-      matchId: assessment.matchId.value,
-      umpireA: {
-        topics: assessment.umpireA.topics.map(topic => ({
-          name: topic.topicName,
-          questions: topic.questionResponses.map(q => ({
-            questionId: q.questionId,
-            value: q.selectedValue
-          })),
-          remarks: topic.remarks
-        })),
-        conclusion: assessment.umpireA.conclusion
-      },
-      umpireB: {
-        topics: assessment.umpireB.topics.map(topic => ({
-          name: topic.topicName,
-          questions: topic.questionResponses.map(q => ({
-            questionId: q.questionId,
-            value: q.selectedValue
-          })),
-          remarks: topic.remarks
-        })),
-        conclusion: assessment.umpireB.conclusion
-      }
-    };
+    return this.saveAsPublished(assessment);
+  }
 
+  async saveAsDraft(assessment: Assessment): Promise<Assessment> {
+    const payload = this.buildAssessmentPayload(assessment, 'DRAFT');
+    const response = await this.restClient.post(`${this.baseUrl}/assessments`, payload);
+    return this.mapToAssessment(response);
+  }
+
+  async saveAsPublished(assessment: Assessment): Promise<Assessment> {
+    const payload = this.buildAssessmentPayload(assessment, 'PUBLISHED');
     const response = await this.restClient.post(`${this.baseUrl}/assessments`, payload);
     return this.mapToAssessment(response);
   }
@@ -68,8 +53,71 @@ export class RestAssessmentRepository implements AssessmentRepository {
     return response.items.map((item: any) => this.mapToAssessment(item));
   }
 
+  async findDraftByMatchAndAssessor(matchId: string, assessorId: string): Promise<Assessment | null> {
+    try {
+      const response = await this.restClient.get(
+        `${this.baseUrl}/assessments?matchId=${matchId}&assessorId=${assessorId}&status=DRAFT&limit=1`
+      );
+      return response.items.length > 0 ? this.mapToAssessment(response.items[0]) : null;
+    } catch (error: any) {
+      if (error.status === 404) return null;
+      throw error;
+    }
+  }
+
   async update(assessment: Assessment): Promise<Assessment> {
-    const payload = {
+    const payload = this.buildUpdatePayload(assessment);
+    const response = await this.restClient.put(`${this.baseUrl}/assessments/${assessment.id.value}`, payload);
+    return this.mapToAssessment(response);
+  }
+
+  async updateDraft(assessment: Assessment): Promise<Assessment> {
+    const payload = this.buildUpdatePayload(assessment, 'DRAFT');
+    const response = await this.restClient.put(`${this.baseUrl}/assessments/${assessment.id.value}`, payload);
+    return this.mapToAssessment(response);
+  }
+
+  async publishDraft(assessment: Assessment): Promise<Assessment> {
+    const payload = this.buildUpdatePayload(assessment, 'PUBLISHED');
+    const response = await this.restClient.put(`${this.baseUrl}/assessments/${assessment.id.value}`, payload);
+    return this.mapToAssessment(response);
+  }
+
+  async delete(id: AssessmentId): Promise<void> {
+    await this.restClient.delete(`${this.baseUrl}/assessments/${id.value}`);
+  }
+
+  private buildAssessmentPayload(assessment: Assessment, status: 'DRAFT' | 'PUBLISHED') {
+    return {
+      matchId: assessment.matchId.value,
+      status,
+      umpireA: {
+        topics: assessment.umpireA.topics.map(topic => ({
+          name: topic.topicName,
+          questions: topic.questionResponses.map(q => ({
+            questionId: q.questionId,
+            value: q.selectedValue
+          })),
+          remarks: topic.remarks
+        })),
+        conclusion: assessment.umpireA.conclusion
+      },
+      umpireB: {
+        topics: assessment.umpireB.topics.map(topic => ({
+          name: topic.topicName,
+          questions: topic.questionResponses.map(q => ({
+            questionId: q.questionId,
+            value: q.selectedValue
+          })),
+          remarks: topic.remarks
+        })),
+        conclusion: assessment.umpireB.conclusion
+      }
+    };
+  }
+
+  private buildUpdatePayload(assessment: Assessment, status?: 'DRAFT' | 'PUBLISHED') {
+    const payload: any = {
       umpireA: {
         topics: assessment.umpireA.topics.map(topic => ({
           name: topic.topicName,
@@ -94,12 +142,11 @@ export class RestAssessmentRepository implements AssessmentRepository {
       }
     };
 
-    const response = await this.restClient.put(`${this.baseUrl}/assessments/${assessment.id.value}`, payload);
-    return this.mapToAssessment(response);
-  }
+    if (status) {
+      payload.status = status;
+    }
 
-  async delete(id: AssessmentId): Promise<void> {
-    await this.restClient.delete(`${this.baseUrl}/assessments/${id.value}`);
+    return payload;
   }
 
   private mapToAssessment(data: any): Assessment {
