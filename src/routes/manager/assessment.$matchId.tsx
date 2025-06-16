@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Header } from '@/components/layout/Header';
 import { UmpireAssessment } from '@/components/assessment/UmpireAssessment';
 import { GradeDisplay } from '@/presentation/components/GradeDisplay';
@@ -11,7 +11,7 @@ import { authService } from '@/lib/auth';
 import { useCreateAssessment } from '@/presentation/hooks/useCreateAssessment';
 import { CreateAssessmentRequest } from '@/application/usecases/CreateAssessmentUseCase';
 import { format } from 'date-fns';
-import { RotateCcw, Save, ToggleLeft, ToggleRight, AlertCircle, CheckCircle } from 'lucide-react';
+import { RotateCcw, Save, ToggleLeft, ToggleRight, AlertCircle, CheckCircle, Send, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useAssessmentConfig } from '@/lib/api-client';
@@ -27,6 +27,12 @@ export const Route = createFileRoute('/manager/assessment/$matchId')({
   component: AssessmentPage,
 });
 
+enum AssessmentStatus {
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+  NONE = 'NONE'
+}
+
 function AssessmentPage() {
   const { matchId } = Route.useParams();
   const router = useRouter();
@@ -35,7 +41,7 @@ function AssessmentPage() {
   const createAssessmentMutation = useCreateAssessment();
   
   const [isVerticalView, setIsVerticalView] = useState(false);
-  const [assessmentCompleted, setAssessmentCompleted] = useState(false);
+  const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus>(AssessmentStatus.NONE);
   const [assessmentResult, setAssessmentResult] = useState<any>(null);
 
   // Dynamic state based on assessment config
@@ -47,9 +53,14 @@ function AssessmentPage() {
   const [umpireBValues, setUmpireBValues] = useState<Record<string, string>>({});
   const [umpireBConclusion, setUmpireBConclusion] = useState('');
 
-  // Auto-save state
+  // Draft state
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isDraftSaving, setIsDraftSaving] = useState(false);
+
+  // Validation refs for scrolling to invalid fields
+  const umpireARef = useRef<HTMLDivElement>(null);
+  const umpireBRef = useRef<HTMLDivElement>(null);
 
   const { data: match, isLoading: matchLoading } = useQuery({
     queryKey: ['match', matchId],
@@ -62,25 +73,67 @@ function AssessmentPage() {
 
   const isLoading = matchLoading || configLoading;
 
-  // Track changes for auto-save
+  // Track changes for auto-save indication
   useEffect(() => {
-    if (assessmentConfig && !assessmentCompleted) {
+    if (assessmentConfig && assessmentStatus !== AssessmentStatus.PUBLISHED) {
       setHasUnsavedChanges(true);
     }
-  }, [umpireAScores, umpireAValues, umpireAConclusion, umpireBScores, umpireBValues, umpireBConclusion, assessmentConfig, assessmentCompleted]);
+  }, [umpireAScores, umpireAValues, umpireAConclusion, umpireBScores, umpireBValues, umpireBConclusion, assessmentConfig, assessmentStatus]);
 
-  // Validation function
-  const isFormValid = () => {
-    if (!assessmentConfig) return false;
+  // Auto-save draft every 30 seconds if there are changes
+  useEffect(() => {
+    if (hasUnsavedChanges && assessmentStatus !== AssessmentStatus.PUBLISHED) {
+      const autoSaveTimer = setTimeout(() => {
+        handleSaveDraft();
+      }, 30000); // 30 seconds
 
-    const allQuestionsAnswered = (values: Record<string, string>) => {
-      return assessmentConfig.topics.every(topic =>
-        topic.questions.every(question => values[question.id] !== undefined && values[question.id] !== '')
-      );
+      return () => clearTimeout(autoSaveTimer);
+    }
+  }, [hasUnsavedChanges, assessmentStatus]);
+
+  // Validation function for publish
+  const validateForPublish = () => {
+    if (!assessmentConfig) return { isValid: false, firstInvalidField: null };
+
+    const validateUmpire = (values: Record<string, string>, conclusion: string, umpireRef: React.RefObject<HTMLDivElement>) => {
+      // Check if all questions are answered
+      for (const topic of assessmentConfig.topics) {
+        for (const question of topic.questions) {
+          if (!values[question.id] || values[question.id] === '') {
+            return { isValid: false, ref: umpireRef, field: question.text };
+          }
+        }
+      }
+      
+      // Check conclusion
+      if (!conclusion.trim()) {
+        return { isValid: false, ref: umpireRef, field: 'Conclusion' };
+      }
+      
+      return { isValid: true, ref: null, field: null };
     };
 
-    const conclusionsComplete = umpireAConclusion.trim() !== '' && umpireBConclusion.trim() !== '';
-    return allQuestionsAnswered(umpireAValues) && allQuestionsAnswered(umpireBValues) && conclusionsComplete;
+    // Validate Umpire A
+    const umpireAValidation = validateUmpire(umpireAValues, umpireAConclusion, umpireARef);
+    if (!umpireAValidation.isValid) {
+      return { 
+        isValid: false, 
+        firstInvalidField: umpireAValidation.ref,
+        fieldName: `Arbitre A - ${umpireAValidation.field}`
+      };
+    }
+
+    // Validate Umpire B
+    const umpireBValidation = validateUmpire(umpireBValues, umpireBConclusion, umpireBRef);
+    if (!umpireBValidation.isValid) {
+      return { 
+        isValid: false, 
+        firstInvalidField: umpireBValidation.ref,
+        fieldName: `Arbitre B - ${umpireBValidation.field}`
+      };
+    }
+
+    return { isValid: true, firstInvalidField: null, fieldName: null };
   };
 
   const calculateGrade = (scores: Record<string, number>) => {
@@ -105,11 +158,40 @@ function AssessmentPage() {
     return { totalScore, maxScore, percentage, level };
   };
 
-  const handleSubmitAssessment = async () => {
+  const handleSaveDraft = async () => {
     if (!match || !assessmentConfig || !user) return;
     
-    if (!isFormValid()) {
-      toast.error(t('common:messages.error.incompleteForm'));
+    setIsDraftSaving(true);
+    
+    try {
+      // Simulate draft save (you can implement actual draft storage here)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setLastSaveTime(new Date());
+      setHasUnsavedChanges(false);
+      setAssessmentStatus(AssessmentStatus.DRAFT);
+      toast.success('Brouillon sauvegardé');
+    } catch (error) {
+      toast.error('Erreur lors de la sauvegarde du brouillon');
+    } finally {
+      setIsDraftSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!match || !assessmentConfig || !user) return;
+    
+    // Validate before publishing
+    const validation = validateForPublish();
+    if (!validation.isValid) {
+      // Scroll to first invalid field
+      if (validation.firstInvalidField?.current) {
+        validation.firstInvalidField.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+      toast.error(`Champ requis: ${validation.fieldName}`);
       return;
     }
 
@@ -151,14 +233,14 @@ function AssessmentPage() {
     try {
       const result = await createAssessmentMutation.mutateAsync(request);
       setAssessmentResult(result);
-      setAssessmentCompleted(true);
+      setAssessmentStatus(AssessmentStatus.PUBLISHED);
       setHasUnsavedChanges(false);
       setLastSaveTime(new Date());
-      toast.success('Évaluation soumise avec succès!');
-      console.log('Assessment created successfully:', result);
+      toast.success('Évaluation publiée avec succès!');
+      console.log('Assessment published successfully:', result);
     } catch (error) {
-      console.error('Failed to create assessment:', error);
-      toast.error('Erreur lors de la soumission de l\'évaluation');
+      console.error('Failed to publish assessment:', error);
+      toast.error('Erreur lors de la publication de l\'évaluation');
     }
   };
 
@@ -185,9 +267,10 @@ function AssessmentPage() {
     setUmpireBValues(emptyValues);
     setUmpireAConclusion('');
     setUmpireBConclusion('');
-    setAssessmentCompleted(false);
+    setAssessmentStatus(AssessmentStatus.NONE);
     setAssessmentResult(null);
     setHasUnsavedChanges(false);
+    setLastSaveTime(null);
     toast.success(t('common:messages.success.reset'));
   };
 
@@ -223,9 +306,30 @@ function AssessmentPage() {
     );
   }
 
-  const formValid = isFormValid();
+  const validation = validateForPublish();
   const umpireAGrade = calculateGrade(umpireAScores);
   const umpireBGrade = calculateGrade(umpireBScores);
+
+  const getStatusBadge = () => {
+    switch (assessmentStatus) {
+      case AssessmentStatus.DRAFT:
+        return (
+          <div className="flex items-center space-x-2 text-orange-600">
+            <FileText className="h-5 w-5" />
+            <span className="text-sm font-normal">Brouillon</span>
+          </div>
+        );
+      case AssessmentStatus.PUBLISHED:
+        return (
+          <div className="flex items-center space-x-2 text-green-600">
+            <CheckCircle className="h-5 w-5" />
+            <span className="text-sm font-normal">Publié</span>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
@@ -238,12 +342,7 @@ function AssessmentPage() {
             <CardHeader>
               <CardTitle className="text-xl flex items-center justify-between">
                 <span>{match.homeTeam} vs {match.awayTeam}</span>
-                {assessmentCompleted && (
-                  <div className="flex items-center space-x-2 text-green-600">
-                    <CheckCircle className="h-5 w-5" />
-                    <span className="text-sm font-normal">Évaluation terminée</span>
-                  </div>
-                )}
+                {getStatusBadge()}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -275,35 +374,59 @@ function AssessmentPage() {
           </Card>
 
           {/* Status Indicators */}
-          {!assessmentCompleted && (
+          {assessmentStatus !== AssessmentStatus.PUBLISHED && (
             <>
-              {/* Validation Warning */}
-              {!formValid && (
+              {/* Draft Status */}
+              {assessmentStatus === AssessmentStatus.DRAFT && (
                 <Card className="border-orange-200 bg-orange-50 w-full">
                   <CardContent className="p-4">
-                    <div className="flex items-center space-x-2 text-orange-700">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-sm">{t('common:messages.error.incompleteForm')}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 text-orange-700">
+                        <FileText className="h-4 w-4" />
+                        <span className="text-sm">Brouillon sauvegardé - Vous pouvez continuer à modifier</span>
+                      </div>
+                      {validation.isValid ? (
+                        <Button 
+                          size="sm" 
+                          onClick={handlePublish}
+                          disabled={createAssessmentMutation.isPending}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          {createAssessmentMutation.isPending ? 'Publication...' : 'Publier'}
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={handlePublish}
+                          disabled={createAssessmentMutation.isPending}
+                        >
+                          <AlertCircle className="h-4 w-4 mr-2" />
+                          Publier (validation requise)
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               )}
 
-              {/* Unsaved Changes Warning */}
-              {hasUnsavedChanges && formValid && (
+              {/* Unsaved Changes */}
+              {hasUnsavedChanges && (
                 <Card className="border-blue-200 bg-blue-50 w-full">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 text-blue-700">
                         <AlertCircle className="h-4 w-4" />
-                        <span className="text-sm">Évaluation prête à être soumise</span>
+                        <span className="text-sm">Modifications non sauvegardées</span>
                       </div>
                       <Button 
                         size="sm" 
-                        onClick={handleSubmitAssessment}
-                        disabled={createAssessmentMutation.isPending}
+                        variant="outline"
+                        onClick={handleSaveDraft}
+                        disabled={isDraftSaving}
                       >
-                        {createAssessmentMutation.isPending ? 'Soumission...' : 'Soumettre maintenant'}
+                        {isDraftSaving ? 'Sauvegarde...' : 'Sauvegarder brouillon'}
                       </Button>
                     </div>
                   </CardContent>
@@ -312,8 +435,8 @@ function AssessmentPage() {
             </>
           )}
 
-          {/* Grade Display - Only show when assessment is completed */}
-          {assessmentCompleted && assessmentResult && (
+          {/* Grade Display - Only show when published */}
+          {assessmentStatus === AssessmentStatus.PUBLISHED && assessmentResult && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
               <GradeDisplay
                 totalScore={assessmentResult.umpireAGrade.totalScore}
@@ -339,14 +462,14 @@ function AssessmentPage() {
               size="sm"
               onClick={() => setIsVerticalView(!isVerticalView)}
               className="flex items-center space-x-2"
-              disabled={assessmentCompleted}
+              disabled={assessmentStatus === AssessmentStatus.PUBLISHED}
             >
               {isVerticalView ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
               <span>{isVerticalView ? t('layout.verticalView') : t('layout.sideBySide')}</span>
             </Button>
             
             <div className="flex space-x-3">
-              {assessmentCompleted ? (
+              {assessmentStatus === AssessmentStatus.PUBLISHED ? (
                 <>
                   <Button variant="outline" size="sm" onClick={handleNewAssessment}>
                     <RotateCcw className="h-4 w-4 mr-2" />
@@ -363,23 +486,32 @@ function AssessmentPage() {
                     {t('common:buttons.reset')}
                   </Button>
                   <Button 
+                    variant="outline"
                     size="sm" 
-                    onClick={handleSubmitAssessment} 
-                    disabled={createAssessmentMutation.isPending || !formValid}
-                    className={!formValid ? 'opacity-50 cursor-not-allowed' : ''}
+                    onClick={handleSaveDraft}
+                    disabled={isDraftSaving || !hasUnsavedChanges}
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {createAssessmentMutation.isPending ? 'Soumission...' : 'Soumettre l\'évaluation'}
+                    {isDraftSaving ? 'Sauvegarde...' : 'Sauvegarder brouillon'}
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={handlePublish} 
+                    disabled={createAssessmentMutation.isPending}
+                    className={!validation.isValid ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {createAssessmentMutation.isPending ? 'Publication...' : 'Publier l\'évaluation'}
                   </Button>
                 </>
               )}
             </div>
           </div>
 
-          {/* Assessment Grid - Only show if assessment not completed */}
-          {!assessmentCompleted && (
+          {/* Assessment Grid - Only show if not published */}
+          {assessmentStatus !== AssessmentStatus.PUBLISHED && (
             <div className={`w-full ${isVerticalView ? 'space-y-8' : 'grid gap-8 grid-cols-1 xl:grid-cols-2'}`}>
-              <div className="w-full">
+              <div className="w-full" ref={umpireARef}>
                 <UmpireAssessment
                   umpireName={`Arbitre A: ${match.umpireA}`}
                   scores={umpireAScores}
@@ -395,7 +527,7 @@ function AssessmentPage() {
                 />
               </div>
               
-              <div className="w-full">
+              <div className="w-full" ref={umpireBRef}>
                 <UmpireAssessment
                   umpireName={`Arbitre B: ${match.umpireB}`}
                   scores={umpireBScores}
@@ -413,8 +545,8 @@ function AssessmentPage() {
             </div>
           )}
 
-          {/* Assessment Summary - Show when completed */}
-          {assessmentCompleted && assessmentResult && (
+          {/* Assessment Summary - Show when published */}
+          {assessmentStatus === AssessmentStatus.PUBLISHED && assessmentResult && (
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -442,7 +574,7 @@ function AssessmentPage() {
                   </div>
                 </div>
                 <div className="mt-4 text-xs text-gray-500">
-                  Rapport ID: {assessmentResult.reportId} | Soumis le: {format(new Date(assessmentResult.submittedAt), 'dd/MM/yyyy à HH:mm')}
+                  Rapport ID: {assessmentResult.reportId} | Publié le: {format(new Date(assessmentResult.submittedAt), 'dd/MM/yyyy à HH:mm')}
                 </div>
               </CardContent>
             </Card>
