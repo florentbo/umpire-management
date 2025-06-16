@@ -43,7 +43,7 @@ function AssessmentPage() {
   const { t } = useTranslation(['assessment', 'dashboard', 'common']);
   const createAssessmentMutation = useCreateAssessment();
   const saveDraftMutation = useSaveDraftAssessment();
-  
+
   const [isVerticalView, setIsVerticalView] = useState(false);
   const [assessmentStatus, setAssessmentStatus] = useState<AssessmentStatus>(AssessmentStatus.NONE);
   const [assessmentResult, setAssessmentResult] = useState<any>(null);
@@ -77,7 +77,7 @@ function AssessmentPage() {
 
   // Load existing draft
   const { data: existingDraft, isLoading: draftLoading } = useLoadDraftAssessment(
-    matchId, 
+    matchId,
     user?.id || ''
   );
 
@@ -87,7 +87,7 @@ function AssessmentPage() {
   useEffect(() => {
     if (existingDraft && assessmentConfig) {
       console.log('Loading existing draft:', existingDraft);
-      
+
       setCurrentDraftId(existingDraft.assessmentId);
       setAssessmentStatus(AssessmentStatus.DRAFT);
       setLastSaveTime(new Date(existingDraft.lastSavedAt));
@@ -95,14 +95,14 @@ function AssessmentPage() {
       // Load Umpire A data
       const umpireAScoresMap: Record<string, number> = {};
       const umpireAValuesMap: Record<string, string> = {};
-      
+
       existingDraft.umpireAData.topics.forEach(topic => {
         topic.questionResponses.forEach(response => {
           umpireAValuesMap[response.questionId] = response.selectedValue;
           umpireAScoresMap[response.questionId] = response.points;
         });
       });
-      
+
       setUmpireAScores(umpireAScoresMap);
       setUmpireAValues(umpireAValuesMap);
       setUmpireAConclusion(existingDraft.umpireAData.conclusion);
@@ -110,14 +110,14 @@ function AssessmentPage() {
       // Load Umpire B data
       const umpireBScoresMap: Record<string, number> = {};
       const umpireBValuesMap: Record<string, string> = {};
-      
+
       existingDraft.umpireBData.topics.forEach(topic => {
         topic.questionResponses.forEach(response => {
           umpireBValuesMap[response.questionId] = response.selectedValue;
           umpireBScoresMap[response.questionId] = response.points;
         });
       });
-      
+
       setUmpireBScores(umpireBScoresMap);
       setUmpireBValues(umpireBValuesMap);
       setUmpireBConclusion(existingDraft.umpireBData.conclusion);
@@ -158,20 +158,20 @@ function AssessmentPage() {
           }
         }
       }
-      
+
       // Check conclusion
       if (!conclusion.trim()) {
         return { isValid: false, ref: umpireRef, field: 'Conclusion' };
       }
-      
+
       return { isValid: true, ref: null, field: null };
     };
 
     // Validate Umpire A
     const umpireAValidation = validateUmpire(umpireAValues, umpireAConclusion, umpireARef);
     if (!umpireAValidation.isValid) {
-      return { 
-        isValid: false, 
+      return {
+        isValid: false,
         firstInvalidField: umpireAValidation.ref,
         fieldName: `Arbitre A - ${umpireAValidation.field}`
       };
@@ -180,8 +180,8 @@ function AssessmentPage() {
     // Validate Umpire B
     const umpireBValidation = validateUmpire(umpireBValues, umpireBConclusion, umpireBRef);
     if (!umpireBValidation.isValid) {
-      return { 
-        isValid: false, 
+      return {
+        isValid: false,
         firstInvalidField: umpireBValidation.ref,
         fieldName: `Arbitre B - ${umpireBValidation.field}`
       };
@@ -190,31 +190,9 @@ function AssessmentPage() {
     return { isValid: true, firstInvalidField: null, fieldName: null };
   };
 
-  const calculateGrade = (scores: Record<string, number>) => {
-    if (!assessmentConfig) return { totalScore: 0, maxScore: 0, percentage: 0, level: 'AT_CURRENT_LEVEL' };
-
-    const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
-    const maxScore = assessmentConfig.topics.reduce((sum, topic) => 
-      sum + topic.questions.reduce((topicSum, question) => 
-        topicSum + Math.max(...question.answerPoints.map(ap => ap.points)), 0), 0);
-    
-    const percentage = (totalScore / maxScore) * 100;
-    
-    let level: string;
-    if (percentage < 60) {
-      level = 'BELOW_EXPECTATION';
-    } else if (percentage >= 60 && percentage < 70) {
-      level = 'AT_CURRENT_LEVEL';
-    } else {
-      level = 'ABOVE_EXPECTATION';
-    }
-
-    return { totalScore, maxScore, percentage, level };
-  };
-
   const buildTopics = (values: Record<string, string>, scores: Record<string, number>) => {
     if (!assessmentConfig) return [];
-    
+
     return assessmentConfig.topics.map(topic => ({
       topicName: topic.name,
       questionResponses: topic.questions.map(question => ({
@@ -227,7 +205,7 @@ function AssessmentPage() {
 
   const handleSaveDraft = async () => {
     if (!match || !assessmentConfig || !user) return;
-    
+
     const request: SaveDraftAssessmentRequest = {
       matchId: match.id,
       assessorId: user.id,
@@ -268,15 +246,15 @@ function AssessmentPage() {
 
   const handlePublish = async () => {
     if (!match || !assessmentConfig || !user) return;
-    
+
     // Validate before publishing
     const validation = validateForPublish();
     if (!validation.isValid) {
       // Scroll to first invalid field
       if (validation.firstInvalidField?.current) {
-        validation.firstInvalidField.current.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
+        validation.firstInvalidField.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
         });
       }
       toast.error(`Champ requis: ${validation.fieldName}`);
@@ -338,7 +316,7 @@ function AssessmentPage() {
     };
 
     const { values: emptyValues, scores: emptyScores } = resetValues();
-    
+
     setUmpireAScores(emptyScores);
     setUmpireBScores(emptyScores);
     setUmpireAValues(emptyValues);
@@ -407,7 +385,7 @@ function AssessmentPage() {
   return (
     <div className="min-h-screen w-full bg-gray-50">
       <Header title={t('titles.matchAssessment')} />
-      
+
       <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="w-full max-w-none space-y-8">
           {/* Match Info */}
@@ -421,19 +399,19 @@ function AssessmentPage() {
             <CardContent>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="font-medium">{t('dashboard:match.details.division')}:</span> 
+                  <span className="font-medium">{t('dashboard:match.details.division')}:</span>
                   <div className="text-gray-600">{match.division}</div>
                 </div>
                 <div>
-                  <span className="font-medium">{t('dashboard:match.details.date')}:</span> 
+                  <span className="font-medium">{t('dashboard:match.details.date')}:</span>
                   <div className="text-gray-600">{format(new Date(match.date), 'MMM d, yyyy')}</div>
                 </div>
                 <div>
-                  <span className="font-medium">{t('dashboard:match.details.time')}:</span> 
+                  <span className="font-medium">{t('dashboard:match.details.time')}:</span>
                   <div className="text-gray-600">{match.time}</div>
                 </div>
                 <div>
-                  <span className="font-medium">{t('dashboard:match.details.umpires')}:</span> 
+                  <span className="font-medium">{t('dashboard:match.details.umpires')}:</span>
                   <div className="text-gray-600">{match.umpireA}, {match.umpireB}</div>
                 </div>
               </div>
@@ -462,8 +440,8 @@ function AssessmentPage() {
                         <span className="text-sm">Brouillon sauvegardé en base de données - Vous pouvez continuer à modifier</span>
                       </div>
                       {validation.isValid ? (
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           onClick={handlePublish}
                           disabled={createAssessmentMutation.isPending}
                           className="bg-green-600 hover:bg-green-700"
@@ -472,8 +450,8 @@ function AssessmentPage() {
                           {createAssessmentMutation.isPending ? 'Publication...' : 'Publier'}
                         </Button>
                       ) : (
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="outline"
                           onClick={handlePublish}
                           disabled={createAssessmentMutation.isPending}
@@ -496,8 +474,8 @@ function AssessmentPage() {
                         <AlertCircle className="h-4 w-4" />
                         <span className="text-sm">Modifications non sauvegardées en base de données</span>
                       </div>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={handleSaveDraft}
                         disabled={saveDraftMutation.isPending}
@@ -543,7 +521,7 @@ function AssessmentPage() {
               {isVerticalView ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
               <span>{isVerticalView ? t('layout.verticalView') : t('layout.sideBySide')}</span>
             </Button>
-            
+
             <div className="flex space-x-3">
               {assessmentStatus === AssessmentStatus.PUBLISHED ? (
                 <>
@@ -556,9 +534,9 @@ function AssessmentPage() {
                   </Button>
                 </>
               ) : (
-                <Button 
-                  size="sm" 
-                  onClick={handlePublish} 
+                <Button
+                  size="sm"
+                  onClick={handlePublish}
                   disabled={createAssessmentMutation.isPending}
                   className={!validation.isValid ? 'bg-orange-600 hover:bg-orange-700' : 'bg-green-600 hover:bg-green-700'}
                 >
@@ -576,27 +554,27 @@ function AssessmentPage() {
                 <UmpireAssessment
                   umpireName={`Arbitre A: ${match.umpireA}`}
                   scores={umpireAScores}
-                  onScoreChange={(field, value) => 
+                  onScoreChange={(field, value) =>
                     setUmpireAScores(prev => ({ ...prev, [field]: value }))
                   }
                   selectedValues={umpireAValues}
-                  onValueChange={(field, value) => 
+                  onValueChange={(field, value) =>
                     setUmpireAValues(prev => ({ ...prev, [field]: value }))
                   }
                   conclusion={umpireAConclusion}
                   onConclusionChange={setUmpireAConclusion}
                 />
               </div>
-              
+
               <div className="w-full" ref={umpireBRef}>
                 <UmpireAssessment
                   umpireName={`Arbitre B: ${match.umpireB}`}
                   scores={umpireBScores}
-                  onScoreChange={(field, value) => 
+                  onScoreChange={(field, value) =>
                     setUmpireBScores(prev => ({ ...prev, [field]: value }))
                   }
                   selectedValues={umpireBValues}
-                  onValueChange={(field, value) => 
+                  onValueChange={(field, value) =>
                     setUmpireBValues(prev => ({ ...prev, [field]: value }))
                   }
                   conclusion={umpireBConclusion}
@@ -621,7 +599,7 @@ function AssessmentPage() {
                     <h4 className="font-semibold mb-2">Arbitre A: {match.umpireA}</h4>
                     <p className="text-sm text-gray-600 mb-2">Conclusion: {umpireAConclusion}</p>
                     <div className="text-sm">
-                      Score: {assessmentResult.umpireAGrade.totalScore}/{assessmentResult.umpireAGrade.maxScore} 
+                      Score: {assessmentResult.umpireAGrade.totalScore}/{assessmentResult.umpireAGrade.maxScore}
                       ({assessmentResult.umpireAGrade.percentage.toFixed(1)}%)
                     </div>
                   </div>
@@ -629,7 +607,7 @@ function AssessmentPage() {
                     <h4 className="font-semibold mb-2">Arbitre B: {match.umpireB}</h4>
                     <p className="text-sm text-gray-600 mb-2">Conclusion: {umpireBConclusion}</p>
                     <div className="text-sm">
-                      Score: {assessmentResult.umpireBGrade.totalScore}/{assessmentResult.umpireBGrade.maxScore} 
+                      Score: {assessmentResult.umpireBGrade.totalScore}/{assessmentResult.umpireBGrade.maxScore}
                       ({assessmentResult.umpireBGrade.percentage.toFixed(1)}%)
                     </div>
                   </div>

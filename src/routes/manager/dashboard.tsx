@@ -1,16 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { apiService } from '@/lib/api';
 import { authService } from '@/lib/auth';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { FileText, Calendar, User, ClipboardList } from 'lucide-react';
-import { useGetAllReports } from '@/presentation/hooks/useGetAllReports';
+import { Calendar, User, ClipboardList } from 'lucide-react';
 import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
 import { ReportStatus } from '@/domain/entities/MatchReportStatus';
 
@@ -57,8 +54,8 @@ function ManagerDashboard() {
       <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="w-full max-w-none space-y-8">
           <div className="flex justify-center items-center space-x-4">
-            <Button 
-              onClick={handleShowMyMatches} 
+            <Button
+              onClick={handleShowMyMatches}
               disabled={loadingMyMatches}
               variant="outline"
             >
