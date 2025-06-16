@@ -110,15 +110,14 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
       .eq('assessor_id', assessorId)
       .eq('status', 'DRAFT')
       .order('last_saved_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
 
-    if (error) {
-      if (error.code === 'PGRST116') return null; // Not found
-      throw new Error(`Failed to find draft assessment: ${error.message}`);
-    }
+    if (error) throw new Error(`Failed to find draft assessment: ${error.message}`);
 
-    return this.mapToAssessment(data);
+    // If no data found, return null
+    if (!data || data.length === 0) return null;
+
+    return this.mapToAssessment(data[0]);
   }
 
   async update(assessment: Assessment): Promise<Assessment> {
