@@ -4,10 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { authService } from '@/lib/auth';
+import { apiService } from '@/lib/api';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { Calendar, User, Eye, Edit, FileText } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Calendar, User, Eye, Edit, FileText, ClipboardList } from 'lucide-react';
 import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
 import { ReportStatus } from '@/domain/entities/MatchReportStatus';
 
@@ -26,7 +28,15 @@ function ReportingPage() {
   const user = authService.getCurrentUser();
   const [activeView, setActiveView] = useState<'my-matches' | 'all-games'>('my-matches');
 
+  // Get matches with status for the current manager
   const { data: myMatchesData, isLoading: loadingMyMatches } = useGetManagerMatchesWithStatus(user?.id || '');
+
+  // Get all matches without filter for "all games" view
+  const { data: allMatches, isLoading: loadingAllMatches } = useQuery({
+    queryKey: ['allMatches'],
+    queryFn: () => apiService.getMatches(false), // false = no filter by manager
+    enabled: activeView === 'all-games'
+  });
 
   const getStatusBadge = (status: ReportStatus) => {
     switch (status) {
@@ -63,6 +73,23 @@ function ReportingPage() {
               {matchWithStatus.reportStatus === ReportStatus.NONE ? 'Créer' : 'Modifier'}
             </>
           )}
+        </Button>
+      </Link>
+    );
+  };
+
+  const getActionButtonForAllGames = (match: any) => {
+    // For all games view, only show action if user is the manager
+    if (match.umpireManagerId !== user?.id) return null;
+    
+    return (
+      <Link
+        to="/manager/assessment/$matchId"
+        params={{ matchId: match.id }}
+      >
+        <Button size="sm" variant="outline">
+          <Edit className="h-4 w-4 mr-2" />
+          Évaluer
         </Button>
       </Link>
     );
@@ -118,7 +145,7 @@ function ReportingPage() {
                   </div>
                 ) : !myMatchesData?.matches || myMatchesData.matches.length === 0 ? (
                   <div className="text-center py-12 w-full">
-                    <FileText className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <ClipboardList className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                     <p className="text-gray-500 text-lg">Aucun match assigné</p>
                     <p className="text-sm text-gray-400 mt-2">Les matches qui vous sont assignés apparaîtront ici</p>
                   </div>
@@ -169,20 +196,62 @@ function ReportingPage() {
                   <span>Tous les Matches</span>
                 </CardTitle>
                 <CardDescription>
-                  Vue complète de tous les matches sans filtre
+                  Vue complète de tous les matches sans filtre par gestionnaire
                 </CardDescription>
               </CardHeader>
               <CardContent className="w-full">
-                <div className="text-center py-12 w-full">
-                  <Calendar className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500 text-lg">Vue "Tous les matches"</p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    Cette vue affichera tous les matches disponibles sans filtre
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    (À implémenter selon vos besoins spécifiques)
-                  </p>
-                </div>
+                {loadingAllMatches ? (
+                  <div className="space-y-4 w-full">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="h-24 bg-gray-100 rounded-lg animate-pulse w-full" />
+                    ))}
+                  </div>
+                ) : !allMatches || allMatches.length === 0 ? (
+                  <div className="text-center py-12 w-full">
+                    <Calendar className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500 text-lg">Aucun match disponible</p>
+                    <p className="text-sm text-gray-400 mt-2">Aucun match trouvé dans le système</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 w-full">
+                    {allMatches.map((match) => (
+                      <Card key={match.id} className={`w-full ${match.umpireManagerId === user?.id ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-gray-300'}`}>
+                        <CardContent className="p-4 w-full">
+                          <div className="flex justify-between items-start w-full">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-lg">
+                                {match.homeTeam} vs {match.awayTeam}
+                              </div>
+                              <div className="text-sm text-gray-600 mt-1">
+                                {match.division}
+                              </div>
+                              <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                                <div className="flex items-center space-x-1">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>{format(new Date(match.date), 'MMM d, yyyy')}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <User className="h-3 w-3" />
+                                  <span>{match.umpireA} & {match.umpireB}</span>
+                                </div>
+                              </div>
+                              {match.umpireManagerId === user?.id && (
+                                <div className="mt-2">
+                                  <Badge variant="outline" className="text-green-600 border-green-200">
+                                    Votre match
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end space-y-2 ml-4">
+                              {getActionButtonForAllGames(match)}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
