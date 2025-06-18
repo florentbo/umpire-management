@@ -269,7 +269,7 @@ export function EditAssessmentView({
     try {
       await createAssessmentMutation.mutateAsync(request);
       toast.success('Évaluation publiée avec succès!');
-      // Redirect to reporting after publishing
+      // Redirect to reporting after publishing - the mutation will handle cache invalidation
       router.navigate({ to: '/manager/reporting' });
     } catch (error) {
       console.error('Failed to publish assessment:', error);
@@ -332,7 +332,7 @@ export function EditAssessmentView({
                 {saveDraftMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder en BDD'}
               </Button>
             </div>
-          </CardContent>
+          </div>
         </Card>
       )}
 

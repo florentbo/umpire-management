@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DIContainer } from '../../infrastructure/di/Container';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
@@ -16,17 +16,24 @@ const container = createSupabaseContainer();
 
 export function useCreateAssessment() {
   const { t } = useTranslation('common');
+  const queryClient = useQueryClient();
   const createAssessmentUseCase = container.getCreateAssessmentUseCase();
 
   return useMutation<any, Error, any>({
     mutationFn: (request: any) => createAssessmentUseCase.execute(request),
-    onSuccess: (response) => {
+    onSuccess: (response, variables) => {
       toast.success(t('messages.success.saved'));
       console.log('Assessment created:', {
         reportId: response.reportId,
         umpireAGrade: response.umpireAGrade,
         umpireBGrade: response.umpireBGrade
       });
+
+      // Invalidate all relevant queries to refresh the UI
+      queryClient.invalidateQueries({ queryKey: ['managerMatchesWithStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['allPublishedReports'] });
+      queryClient.invalidateQueries({ queryKey: ['draftAssessment', variables.matchId] });
+      queryClient.invalidateQueries({ queryKey: ['allReports'] });
     },
     onError: (error) => {
       toast.error(t('messages.error.save'));
