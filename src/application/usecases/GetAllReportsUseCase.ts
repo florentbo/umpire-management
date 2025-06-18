@@ -1,37 +1,9 @@
 import { MatchReportRepository } from '@/domain/repositories/AssessmentRepository';
+import { ReportSummary, ReportSummaryAggregate } from '@/domain/entities/ReportSummary';
 import { getUserNameFromEmail } from '@/lib/user-mapping';
 
 export interface GetAllReportsResponse {
-  reports: Array<{
-    id: string;
-    matchId: string;
-    matchInfo: {
-      homeTeam: string;
-      awayTeam: string;
-      division: string;
-      date: string;
-      time: string;
-      umpireAName: string;
-      umpireBName: string;
-    };
-    assessorId: string;
-    assessorName: string;
-    umpireAData: {
-      totalScore: number;
-      maxScore: number;
-      percentage: number;
-      level: string;
-      conclusion: string;
-    };
-    umpireBData: {
-      totalScore: number;
-      maxScore: number;
-      percentage: number;
-      level: string;
-      conclusion: string;
-    };
-    submittedAt: string;
-  }>;
+  reports: ReportSummaryAggregate[];
 }
 
 export class GetAllReportsUseCase {
@@ -42,11 +14,11 @@ export class GetAllReportsUseCase {
     const reports = await this.matchReportRepository.findAll();
 
     // Map reports and get assessor names
-    const mappedReports = await Promise.all(
-      reports.map(async (report) => {
+    const reportSummaries = await Promise.all(
+      reports.map(async (report): Promise<ReportSummaryAggregate> => {
         const assessorName = await getUserNameFromEmail(report.assessment.assessorId.value) || report.assessment.assessorId.value;
         
-        return {
+        const reportData: ReportSummary = {
           id: report.id.value,
           matchId: report.matchInfo.id.value,
           matchInfo: {
@@ -76,9 +48,11 @@ export class GetAllReportsUseCase {
           },
           submittedAt: report.submittedAt.toISOString(),
         };
+
+        return ReportSummaryAggregate.create(reportData);
       })
     );
 
-    return { reports: mappedReports };
+    return { reports: reportSummaries };
   }
 }

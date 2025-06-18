@@ -7,9 +7,10 @@ import { authService } from '@/lib/auth';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { Calendar, User, Eye, Edit, FileText, ClipboardList, Clock } from 'lucide-react';
+import { Calendar, User, Eye, Edit, FileText, ClipboardList } from 'lucide-react';
 import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
 import { useGetAllPublishedReports } from '@/presentation/hooks/useGetAllPublishedReports';
+import { ReportsTable } from '@/presentation/components/reporting/ReportsTable';
 import { ReportStatus } from '@/domain/entities/MatchReportStatus';
 
 export const Route = createFileRoute('/manager/reporting')({
@@ -71,32 +72,6 @@ function ReportingPage() {
         </Button>
       </Link>
     );
-  };
-
-  const getGradeColor = (level: string) => {
-    switch (level) {
-      case 'BELOW_EXPECTATION':
-        return 'text-red-600 bg-red-50 border-red-200';
-      case 'AT_CURRENT_LEVEL':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'ABOVE_EXPECTATION':
-        return 'text-green-600 bg-green-50 border-green-200';
-      default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
-
-  const getGradeLabel = (level: string) => {
-    switch (level) {
-      case 'BELOW_EXPECTATION':
-        return 'En dessous';
-      case 'AT_CURRENT_LEVEL':
-        return 'Au niveau';
-      case 'ABOVE_EXPECTATION':
-        return 'Au-dessus';
-      default:
-        return level;
-    }
   };
 
   return (
@@ -191,7 +166,7 @@ function ReportingPage() {
             </Card>
           )}
 
-          {/* All Published Reports Grid View */}
+          {/* All Published Reports Table View */}
           {activeView === 'all-reports' && (
             <Card className="w-full">
               <CardHeader>
@@ -203,12 +178,14 @@ function ReportingPage() {
                   Vue synthétique de tous les rapports d'évaluation publiés
                 </CardDescription>
               </CardHeader>
-              <CardContent className="w-full">
+              <CardContent className="w-full p-0">
                 {loadingAllReports ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 w-full">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="h-48 bg-gray-100 rounded-lg animate-pulse w-full" />
-                    ))}
+                  <div className="p-6">
+                    <div className="space-y-4 w-full">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse w-full" />
+                      ))}
+                    </div>
                   </div>
                 ) : !allReportsData?.reports || allReportsData.reports.length === 0 ? (
                   <div className="text-center py-12 w-full">
@@ -217,105 +194,10 @@ function ReportingPage() {
                     <p className="text-sm text-gray-400 mt-2">Les rapports publiés apparaîtront ici</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
-                    {allReportsData.reports.map((report) => (
-                      <Card 
-                        key={report.id} 
-                        className={`w-full hover:shadow-lg transition-shadow cursor-pointer ${
-                          report.assessorId === user?.id ? 'ring-2 ring-blue-200 bg-blue-50' : ''
-                        }`}
-                        title={`Match ID: ${report.matchId}`}
-                      >
-                        <CardContent className="p-4 w-full">
-                          {/* Match Header */}
-                          <div className="mb-4">
-                            <div className="font-bold text-lg text-gray-900 mb-1">
-                              {report.matchInfo.homeTeam} vs {report.matchInfo.awayTeam}
-                            </div>
-                            <div className="text-sm text-gray-600 mb-2">
-                              {report.matchInfo.division}
-                            </div>
-                            <div className="flex items-center space-x-3 text-xs text-gray-500">
-                              <div className="flex items-center space-x-1">
-                                <Calendar className="h-3 w-3" />
-                                <span>{format(new Date(report.matchInfo.date), 'dd/MM/yyyy')}</span>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <Clock className="h-3 w-3" />
-                                <span>{report.matchInfo.time}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Umpires Assessment */}
-                          <div className="space-y-3 mb-4">
-                            {/* Umpire A */}
-                            <div className="bg-white rounded-lg p-3 border">
-                              <div className="flex justify-between items-center mb-2">
-                                <div className="font-medium text-sm text-gray-700">
-                                  {report.matchInfo.umpireAName}
-                                </div>
-                                <div className="text-lg font-bold text-blue-600">
-                                  {report.umpireAData.totalScore}/{report.umpireAData.maxScore}
-                                </div>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <div className="text-xs text-gray-500">
-                                  {report.umpireAData.percentage.toFixed(1)}%
-                                </div>
-                                <Badge 
-                                  variant="outline" 
-                                  className={`text-xs px-2 py-1 ${getGradeColor(report.umpireAData.level)}`}
-                                >
-                                  {getGradeLabel(report.umpireAData.level)}
-                                </Badge>
-                              </div>
-                            </div>
-
-                            {/* Umpire B */}
-                            <div className="bg-white rounded-lg p-3 border">
-                              <div className="flex justify-between items-center mb-2">
-                                <div className="font-medium text-sm text-gray-700">
-                                  {report.matchInfo.umpireBName}
-                                </div>
-                                <div className="text-lg font-bold text-blue-600">
-                                  {report.umpireBData.totalScore}/{report.umpireBData.maxScore}
-                                </div>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <div className="text-xs text-gray-500">
-                                  {report.umpireBData.percentage.toFixed(1)}%
-                                </div>
-                                <Badge 
-                                  variant="outline" 
-                                  className={`text-xs px-2 py-1 ${getGradeColor(report.umpireBData.level)}`}
-                                >
-                                  {getGradeLabel(report.umpireBData.level)}
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Footer */}
-                          <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                            <div className="text-xs text-gray-500">
-                              <div className="font-medium text-blue-600">{report.assessorName}</div>
-                              <div>{format(new Date(report.submittedAt), 'dd/MM/yyyy')}</div>
-                            </div>
-                            <Link
-                              to="/manager/assessment/$matchId"
-                              params={{ matchId: report.matchId }}
-                            >
-                              <Button size="sm" variant="outline" className="text-xs">
-                                <Eye className="h-3 w-3 mr-1" />
-                                Voir
-                              </Button>
-                            </Link>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                  <ReportsTable 
+                    reports={allReportsData.reports} 
+                    currentAssessorId={user?.id || ''}
+                  />
                 )}
               </CardContent>
             </Card>
