@@ -144,10 +144,6 @@ function ReportingPage() {
               <CardContent className="w-full">
                 {/* Status Filter */}
                 <div className="mb-6">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <Filter className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Filtrer par statut:</span>
-                  </div>
                   <div className="flex flex-wrap gap-2">
                     {(['ALL', ReportStatus.NONE, ReportStatus.DRAFT, ReportStatus.PUBLISHED] as const).map((status) => (
                       <Button
@@ -158,8 +154,8 @@ function ReportingPage() {
                         className="flex items-center space-x-2"
                       >
                         <span>{getStatusFilterLabel(status)}</span>
-                        <Badge 
-                          variant="secondary" 
+                        <Badge
+                          variant="secondary"
                           className={`ml-1 ${statusFilter === status ? 'bg-white text-blue-600' : 'bg-gray-100'}`}
                         >
                           {getStatusCount(status)}
