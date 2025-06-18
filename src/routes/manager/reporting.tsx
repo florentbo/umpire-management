@@ -4,13 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { authService } from '@/lib/auth';
-import { apiService } from '@/lib/api';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Calendar, User, Eye, Edit, FileText, ClipboardList } from 'lucide-react';
 import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
+import { useGetAllPublishedReports } from '@/presentation/hooks/useGetAllPublishedReports';
 import { ReportStatus } from '@/domain/entities/MatchReportStatus';
 
 export const Route = createFileRoute('/manager/reporting')({
@@ -26,17 +25,13 @@ export const Route = createFileRoute('/manager/reporting')({
 function ReportingPage() {
   const { t } = useTranslation('dashboard');
   const user = authService.getCurrentUser();
-  const [activeView, setActiveView] = useState<'my-matches' | 'all-games'>('my-matches');
+  const [activeView, setActiveView] = useState<'my-matches' | 'all-reports'>('my-matches');
 
   // Get matches with status for the current manager
   const { data: myMatchesData, isLoading: loadingMyMatches } = useGetManagerMatchesWithStatus(user?.id || '');
 
-  // Get all matches without filter for "all games" view
-  const { data: allMatches, isLoading: loadingAllMatches } = useQuery({
-    queryKey: ['allMatches'],
-    queryFn: () => apiService.getMatches(false), // false = no filter by manager
-    enabled: activeView === 'all-games'
-  });
+  // Get all published reports
+  const { data: allReportsData, isLoading: loadingAllReports } = useGetAllPublishedReports();
 
   const getStatusBadge = (status: ReportStatus) => {
     switch (status) {
@@ -78,21 +73,16 @@ function ReportingPage() {
     );
   };
 
-  const getActionButtonForAllGames = (match: any) => {
-    // For all games view, only show action if user is the manager
-    if (match.umpireManagerId !== user?.id) return null;
-    
-    return (
-      <Link
-        to="/manager/assessment/$matchId"
-        params={{ matchId: match.id }}
-      >
-        <Button size="sm" variant="outline">
-          <Edit className="h-4 w-4 mr-2" />
-          Évaluer
-        </Button>
-      </Link>
-    );
+  const getGradeColor = (percentage: number) => {
+    if (percentage < 60) return 'text-red-600';
+    if (percentage < 70) return 'text-yellow-600';
+    return 'text-green-600';
+  };
+
+  const getGradeLabel = (percentage: number) => {
+    if (percentage < 60) return 'En dessous des attentes';
+    if (percentage < 70) return 'Au niveau actuel';
+    return 'Au-dessus des attentes';
   };
 
   return (
@@ -114,12 +104,12 @@ function ReportingPage() {
                 Mes matches avec statut
               </Button>
               <Button
-                variant={activeView === 'all-games' ? 'default' : 'ghost'}
+                variant={activeView === 'all-reports' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => setActiveView('all-games')}
+                onClick={() => setActiveView('all-reports')}
               >
-                <Calendar className="h-4 w-4 mr-2" />
-                Tous les matches
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Tous les rapports publiés
               </Button>
             </div>
           </div>
@@ -187,64 +177,115 @@ function ReportingPage() {
             </Card>
           )}
 
-          {/* All Games View */}
-          {activeView === 'all-games' && (
+          {/* All Published Reports View */}
+          {activeView === 'all-reports' && (
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Calendar className="h-5 w-5" />
-                  <span>Tous les Matches</span>
+                  <ClipboardList className="h-5 w-5" />
+                  <span>Tous les Rapports Publiés</span>
                 </CardTitle>
                 <CardDescription>
-                  Vue complète de tous les matches sans filtre par gestionnaire
+                  Vue complète de tous les rapports d'évaluation publiés dans le système
                 </CardDescription>
               </CardHeader>
               <CardContent className="w-full">
-                {loadingAllMatches ? (
+                {loadingAllReports ? (
                   <div className="space-y-4 w-full">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="h-24 bg-gray-100 rounded-lg animate-pulse w-full" />
+                      <div key={i} className="h-32 bg-gray-100 rounded-lg animate-pulse w-full" />
                     ))}
                   </div>
-                ) : !allMatches || allMatches.length === 0 ? (
+                ) : !allReportsData?.reports || allReportsData.reports.length === 0 ? (
                   <div className="text-center py-12 w-full">
-                    <Calendar className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                    <p className="text-gray-500 text-lg">Aucun match disponible</p>
-                    <p className="text-sm text-gray-400 mt-2">Aucun match trouvé dans le système</p>
+                    <ClipboardList className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500 text-lg">Aucun rapport publié</p>
+                    <p className="text-sm text-gray-400 mt-2">Les rapports publiés apparaîtront ici</p>
                   </div>
                 ) : (
                   <div className="space-y-4 w-full">
-                    {allMatches.map((match) => (
-                      <Card key={match.id} className={`w-full ${match.umpireManagerId === user?.id ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-gray-300'}`}>
-                        <CardContent className="p-4 w-full">
+                    {allReportsData.reports.map((report) => (
+                      <Card key={report.id} className={`w-full ${report.assessorId === user?.id ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-blue-300'}`}>
+                        <CardContent className="p-6 w-full">
                           <div className="flex justify-between items-start w-full">
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-lg">
-                                {match.homeTeam} vs {match.awayTeam}
+                              <div className="font-semibold text-xl mb-2">
+                                {report.matchInfo.homeTeam} vs {report.matchInfo.awayTeam}
                               </div>
-                              <div className="text-sm text-gray-600 mt-1">
-                                {match.division}
+                              <div className="text-sm text-gray-600 mb-3">
+                                {report.matchInfo.division}
                               </div>
-                              <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                              
+                              {/* Match Details */}
+                              <div className="flex items-center space-x-4 text-xs text-gray-500 mb-4">
                                 <div className="flex items-center space-x-1">
                                   <Calendar className="h-3 w-3" />
-                                  <span>{format(new Date(match.date), 'MMM d, yyyy')}</span>
+                                  <span>{format(new Date(report.matchInfo.date), 'MMM d, yyyy')}</span>
                                 </div>
                                 <div className="flex items-center space-x-1">
                                   <User className="h-3 w-3" />
-                                  <span>{match.umpireA} & {match.umpireB}</span>
+                                  <span>{report.matchInfo.umpireAName} & {report.matchInfo.umpireBName}</span>
+                                </div>
+                                <div className="text-blue-600">
+                                  Évalué par: {report.assessorId}
                                 </div>
                               </div>
-                              {match.umpireManagerId === user?.id && (
-                                <div className="mt-2">
-                                  <Badge variant="outline" className="text-green-600 border-green-200">
-                                    Votre match
-                                  </Badge>
+
+                              {/* Umpire Grades */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                  <div className="font-medium text-sm text-gray-700 mb-1">
+                                    Arbitre A: {report.matchInfo.umpireAName}
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-lg font-bold text-blue-600">
+                                      {report.umpireAData.totalScore}/{report.umpireAData.maxScore}
+                                    </div>
+                                    <div className={`text-sm font-medium ${getGradeColor(report.umpireAData.percentage)}`}>
+                                      {report.umpireAData.percentage.toFixed(1)}% - {getGradeLabel(report.umpireAData.percentage)}
+                                    </div>
+                                  </div>
                                 </div>
-                              )}
+                                
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                  <div className="font-medium text-sm text-gray-700 mb-1">
+                                    Arbitre B: {report.matchInfo.umpireBName}
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-lg font-bold text-blue-600">
+                                      {report.umpireBData.totalScore}/{report.umpireBData.maxScore}
+                                    </div>
+                                    <div className={`text-sm font-medium ${getGradeColor(report.umpireBData.percentage)}`}>
+                                      {report.umpireBData.percentage.toFixed(1)}% - {getGradeLabel(report.umpireBData.percentage)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Submission Date */}
+                              <div className="text-xs text-gray-500 mt-3">
+                                Publié le {format(new Date(report.submittedAt), 'dd/MM/yyyy à HH:mm')}
+                              </div>
                             </div>
+                            
                             <div className="flex flex-col items-end space-y-2 ml-4">
-                              {getActionButtonForAllGames(match)}
+                              <Badge variant="outline" className="text-green-600 border-green-200">
+                                Publié
+                              </Badge>
+                              {report.assessorId === user?.id && (
+                                <Badge variant="outline" className="text-blue-600 border-blue-200">
+                                  Votre rapport
+                                </Badge>
+                              )}
+                              <Link
+                                to="/manager/assessment/$matchId"
+                                params={{ matchId: report.matchId }}
+                              >
+                                <Button size="sm" variant="secondary">
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Voir détails
+                                </Button>
+                              </Link>
                             </div>
                           </div>
                         </CardContent>
