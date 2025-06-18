@@ -56,7 +56,7 @@ function ReportingPage() {
     if (!matchWithStatus.canEdit) return null;
 
     const isPublished = matchWithStatus.reportStatus === ReportStatus.PUBLISHED;
-    
+
     return (
       <Link
         to="/manager/assessment/$matchId"
@@ -105,7 +105,7 @@ function ReportingPage() {
       <Header title="Reporting" />
       <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="w-full max-w-none space-y-8">
-          
+
           {/* View Toggle */}
           <div className="flex justify-center">
             <div className="bg-white rounded-lg p-1 shadow-sm border">
@@ -116,7 +116,7 @@ function ReportingPage() {
                 className="mr-1"
               >
                 <FileText className="h-4 w-4 mr-2" />
-                Mes matches avec statut
+                Mes matches
               </Button>
               <Button
                 variant={activeView === 'all-reports' ? 'default' : 'ghost'}
@@ -135,7 +135,7 @@ function ReportingPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <FileText className="h-5 w-5" />
-                  <span>Mes Matches avec Statut des Rapports</span>
+                  <span>Mes matches</span>
                 </CardTitle>
                 <CardDescription>
                   Vos matches assignés avec le statut des rapports d'évaluation
@@ -253,8 +253,8 @@ function ReportingPage() {
                     <p className="text-sm text-gray-400 mt-2">Les rapports publiés apparaîtront ici</p>
                   </div>
                 ) : (
-                  <ReportsTable 
-                    reports={allReportsData.reports} 
+                  <ReportsTable
+                    reports={allReportsData.reports}
                     currentAssessorId={user?.id || ''}
                   />
                 )}
