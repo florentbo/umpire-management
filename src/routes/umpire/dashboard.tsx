@@ -39,7 +39,7 @@ function UmpireDashboard() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
-      <Header title={t('umpire.title')} />
+      <Header title={t('umpire.title')} showNavigation={false} />
       
       <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="w-full max-w-none space-y-8">
