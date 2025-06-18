@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ReportSortingService, ReportForSorting } from '../ReportSortingService';
 
 describe('ReportSortingService', () => {
