@@ -5,7 +5,8 @@ import { GetManagerMatchesWithStatusUseCase } from '@/application/usecases/GetMa
 import { SaveDraftAssessmentUseCase } from '@/application/usecases/SaveDraftAssessmentUseCase';
 import { LoadDraftAssessmentUseCase } from '@/application/usecases/LoadDraftAssessmentUseCase';
 import { MatchRepository } from '@/domain/repositories/MatchRepository';
-import { SupabaseAssessmentRepository, SupabaseMatchReportRepository } from '../repositories/SupabaseAssessmentRepository';
+import { SupabaseAssessmentRepository } from '../repositories/SupabaseAssessmentRepository';
+import { SupabaseMatchReportRepository } from '../repositories/SupabaseMatchReportRepository';
 import { CsvMatchRepository } from '../repositories/CsvMatchRepository';
 
 export interface Container {
