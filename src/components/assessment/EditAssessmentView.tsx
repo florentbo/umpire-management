@@ -332,7 +332,7 @@ export function EditAssessmentView({
                 {saveDraftMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder en BDD'}
               </Button>
             </div>
-          </div>
+          </CardContent>
         </Card>
       )}
 
