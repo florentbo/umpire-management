@@ -33,7 +33,7 @@ function ReportingPage() {
   // Get all published reports
   const { data: allReportsData, isLoading: loadingAllReports } = useGetAllPublishedReports();
 
-  // Sort and filter matches with business priority
+  // Enhanced sorting function for matches with better date/time handling
   const getSortedAndFilteredMatches = () => {
     if (!myMatchesData?.matches) return [];
 
@@ -43,18 +43,17 @@ function ReportingPage() {
       filtered = filtered.filter(match => match.reportStatus === statusFilter);
     }
 
-    // Sort by priority: NONE and DRAFT first, then PUBLISHED
-    // Within each group, sort by date/time (earliest first)
+    // Enhanced sorting with proper date/time parsing and priority
     return filtered.sort((a, b) => {
-      // Priority sorting: NONE and DRAFT come first
+      // Priority sorting: NONE and DRAFT come first (urgent tasks)
       const getPriority = (status: ReportStatus) => {
         switch (status) {
           case ReportStatus.NONE:
-            return 1;
+            return 1; // Highest priority - needs to be created
           case ReportStatus.DRAFT:
-            return 2;
+            return 2; // Second priority - needs to be completed
           case ReportStatus.PUBLISHED:
-            return 3;
+            return 3; // Lowest priority - already done
           default:
             return 4;
         }
@@ -63,14 +62,54 @@ function ReportingPage() {
       const priorityA = getPriority(a.reportStatus);
       const priorityB = getPriority(b.reportStatus);
 
+      // If different priorities, sort by priority
       if (priorityA !== priorityB) {
         return priorityA - priorityB;
       }
 
-      // Within same priority, sort by date and time (earliest first)
-      const dateA = new Date(`${a.match.date} ${a.match.time}`);
-      const dateB = new Date(`${b.match.date} ${b.match.time}`);
-      return dateA.getTime() - dateB.getTime();
+      // Within same priority, sort by date and time (earliest first for urgent tasks, latest first for completed)
+      const parseDateTime = (dateStr: string, timeStr: string) => {
+        try {
+          // Handle different date formats that might come from CSV
+          let normalizedDate = dateStr;
+          
+          // If date is in YYYY-MM-DD format, convert to a standard format
+          if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+              normalizedDate = `${parts[1]}/${parts[2]}/${parts[0]}`; // Convert to MM/DD/YYYY
+            }
+          }
+          
+          // Clean up time string - remove milliseconds if present
+          const cleanTime = timeStr.split('.')[0];
+          
+          // Create date object
+          const dateTime = new Date(`${normalizedDate} ${cleanTime}`);
+          
+          // Validate the date
+          if (isNaN(dateTime.getTime())) {
+            console.warn(`Invalid date/time: ${dateStr} ${timeStr}`);
+            return new Date(0); // Return epoch as fallback
+          }
+          
+          return dateTime;
+        } catch (error) {
+          console.warn(`Error parsing date/time: ${dateStr} ${timeStr}`, error);
+          return new Date(0); // Return epoch as fallback
+        }
+      };
+
+      const dateA = parseDateTime(a.match.date, a.match.time);
+      const dateB = parseDateTime(b.match.date, b.match.time);
+
+      // For urgent tasks (NONE/DRAFT), show earliest dates first
+      // For completed tasks (PUBLISHED), show latest dates first
+      if (priorityA <= 2) { // NONE or DRAFT
+        return dateA.getTime() - dateB.getTime(); // Ascending (earliest first)
+      } else { // PUBLISHED
+        return dateB.getTime() - dateA.getTime(); // Descending (latest first)
+      }
     });
   };
 
@@ -150,36 +189,58 @@ function ReportingPage() {
     return myMatchesData.matches.filter(match => match.reportStatus === status).length;
   };
 
-  const renderMatchCard = (matchWithStatus: any) => (
-    <Card key={matchWithStatus.match.id.value} className="border-l-4 border-l-blue-500 w-full">
-      <CardContent className="p-4 w-full">
-        <div className="flex justify-between items-start w-full">
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-lg">
-              {matchWithStatus.match.homeTeam} vs {matchWithStatus.match.awayTeam}
-            </div>
-            <div className="text-sm text-gray-600 mt-1">
-              {matchWithStatus.match.division}
-            </div>
-            <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
-              <div className="flex items-center space-x-1">
-                <Calendar className="h-3 w-3" />
-                <span>{format(new Date(matchWithStatus.match.date), 'MMM d, yyyy')} à {matchWithStatus.match.time}</span>
+  const renderMatchCard = (matchWithStatus: any) => {
+    // Enhanced date formatting with error handling
+    const formatMatchDate = (dateStr: string, timeStr: string) => {
+      try {
+        const cleanTime = timeStr.split('.')[0];
+        let displayDate = dateStr;
+        
+        // If date is in YYYY-MM-DD format, format it nicely
+        if (dateStr.includes('-')) {
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            displayDate = format(date, 'MMM d, yyyy');
+          }
+        }
+        
+        return `${displayDate} à ${cleanTime}`;
+      } catch (error) {
+        return `${dateStr} à ${timeStr}`;
+      }
+    };
+
+    return (
+      <Card key={matchWithStatus.match.id.value} className="border-l-4 border-l-blue-500 w-full">
+        <CardContent className="p-4 w-full">
+          <div className="flex justify-between items-start w-full">
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-lg">
+                {matchWithStatus.match.homeTeam} vs {matchWithStatus.match.awayTeam}
               </div>
-              <div className="flex items-center space-x-1">
-                <User className="h-3 w-3" />
-                <span>{matchWithStatus.match.umpireAName} & {matchWithStatus.match.umpireBName}</span>
+              <div className="text-sm text-gray-600 mt-1">
+                {matchWithStatus.match.division}
               </div>
+              <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+                <div className="flex items-center space-x-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>{formatMatchDate(matchWithStatus.match.date, matchWithStatus.match.time)}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <User className="h-3 w-3" />
+                  <span>{matchWithStatus.match.umpireAName} & {matchWithStatus.match.umpireBName}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-end space-y-2 ml-4">
+              {getStatusBadge(matchWithStatus.reportStatus)}
+              {getActionButton(matchWithStatus)}
             </div>
           </div>
-          <div className="flex flex-col items-end space-y-2 ml-4">
-            {getStatusBadge(matchWithStatus.reportStatus)}
-            {getActionButton(matchWithStatus)}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
