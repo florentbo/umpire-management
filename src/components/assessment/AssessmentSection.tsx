@@ -27,16 +27,15 @@ interface AssessmentSectionProps {
   topicName?: string; // Add topicName prop
 }
 
-export function AssessmentSection({ 
-  title, 
-  criteria, 
-  maxScore, 
-  currentScore, 
+export function AssessmentSection({
+  title,
+  criteria,
+  maxScore,
+  currentScore,
   hasRemarks = false,
   remarks = '',
   onRemarksChange,
-  readOnly = false,
-  topicName
+  readOnly = false
 }: AssessmentSectionProps) {
   const { t } = useTranslation('common');
 
@@ -66,7 +65,7 @@ export function AssessmentSection({
             />
           </div>
         ))}
-        
+
         {hasRemarks && (
           <div className="space-y-3 pt-4 border-t border-gray-100 w-full">
             <Label htmlFor={`remarks-${title.toLowerCase().replace(/\s+/g, '-')}`} className="font-medium text-sm text-gray-700">
