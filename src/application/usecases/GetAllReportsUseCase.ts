@@ -1,6 +1,6 @@
 import { MatchReportRepository } from '@/domain/repositories/AssessmentRepository';
 import { ReportSummary, ReportSummaryAggregate } from '@/domain/entities/ReportSummary';
-import { getUserNameFromEmail } from '@/lib/user-mapping';
+import { getUserNameFromId } from '@/lib/user-mapping';
 
 export interface GetAllReportsResponse {
   reports: ReportSummaryAggregate[];
@@ -18,10 +18,10 @@ export class GetAllReportsUseCase {
     // Map reports and get assessor names
     const reportSummaries = await Promise.all(
       reports.map(async (report): Promise<ReportSummaryAggregate> => {
-        // Get assessor name from email mapping
-        const assessorName = await getUserNameFromEmail(report.assessment.assessorId.value);
+        // Get assessor name from ID mapping (not email!)
+        const assessorName = await getUserNameFromId(report.assessment.assessorId.value);
         
-        console.log(`Mapping assessor: ${report.assessment.assessorId.value} -> ${assessorName}`);
+        console.log(`Mapping assessor ID: ${report.assessment.assessorId.value} -> ${assessorName}`);
         
         const reportData: ReportSummary = {
           id: report.id.value,
@@ -36,7 +36,7 @@ export class GetAllReportsUseCase {
             umpireBName: report.matchInfo.umpireBName,
           },
           assessorId: report.assessment.assessorId.value,
-          assessorName: assessorName || report.assessment.assessorId.value, // Fallback to ID if name not found
+          assessorName: assessorName || `User ${report.assessment.assessorId.value}`, // Fallback to "User ID" if name not found
           umpireAData: {
             totalScore: report.assessment.umpireA.totalScore.value,
             maxScore: report.assessment.umpireA.totalScore.maxValue,
