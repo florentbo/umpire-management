@@ -53,8 +53,8 @@ export function CreateAssessmentView({
           <p className="text-red-700 mb-4">
             Vous n'êtes pas autorisé à créer une évaluation pour ce match.
           </p>
-          <Button onClick={() => router.navigate({ to: '/manager/dashboard' })}>
-            Retour au tableau de bord
+          <Button onClick={() => router.navigate({ to: '/manager/reporting' })}>
+            Retour au Reporting
           </Button>
         </CardContent>
       </Card>
@@ -186,8 +186,8 @@ export function CreateAssessmentView({
     try {
       await createAssessmentMutation.mutateAsync(request);
       toast.success('Évaluation publiée avec succès!');
-      // Redirect to read view after publishing
-      router.navigate({ to: '/manager/assessment/$matchId', params: { matchId } });
+      // Redirect to reporting after publishing
+      router.navigate({ to: '/manager/reporting' });
     } catch (error) {
       console.error('Failed to publish assessment:', error);
       toast.error('Erreur lors de la publication de l\'évaluation');

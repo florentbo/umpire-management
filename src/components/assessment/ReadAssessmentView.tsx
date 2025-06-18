@@ -158,8 +158,8 @@ export function ReadAssessmentView({
           <span>{isVerticalView ? 'Vue Verticale' : 'Côte à Côte'}</span>
         </Button>
 
-        <Button onClick={() => router.navigate({ to: '/manager/dashboard' })}>
-          Retour au tableau de bord
+        <Button onClick={() => router.navigate({ to: '/manager/reporting' })}>
+          Retour au Reporting
         </Button>
       </div>
 
