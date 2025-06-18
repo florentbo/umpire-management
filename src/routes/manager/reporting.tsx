@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { authService } from '@/lib/auth';
 import { format } from 'date-fns';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Calendar, User, Eye, Edit, FileText, ClipboardList, Filter } from 'lucide-react';
 import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
 import { useGetAllPublishedReports } from '@/presentation/hooks/useGetAllPublishedReports';
 import { ReportsTable } from '@/presentation/components/reporting/ReportsTable';
 import { ReportStatus } from '@/domain/entities/MatchReportStatus';
+import { MatchSortingService } from '@/domain/services/MatchSortingService';
+import { ReportSortingService } from '@/domain/services/ReportSortingService';
 
 export const Route = createFileRoute('/manager/reporting')({
   beforeLoad: () => {
@@ -27,106 +29,37 @@ function ReportingPage() {
   const [activeView, setActiveView] = useState<'my-matches' | 'all-reports'>('my-matches');
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'ALL'>('ALL');
 
+  // Domain services
+  const matchSortingService = useMemo(() => new MatchSortingService(), []);
+  const reportSortingService = useMemo(() => new ReportSortingService(), []);
+
   // Get matches with status for the current manager
   const { data: myMatchesData, isLoading: loadingMyMatches } = useGetManagerMatchesWithStatus(user?.id || '');
 
   // Get all published reports
   const { data: allReportsData, isLoading: loadingAllReports } = useGetAllPublishedReports();
 
-  // Enhanced sorting function for matches with better date/time handling
-  const getSortedAndFilteredMatches = () => {
-    if (!myMatchesData?.matches) return [];
-
-    // First filter by status if needed
-    let filtered = myMatchesData.matches;
-    if (statusFilter !== 'ALL') {
-      filtered = filtered.filter(match => match.reportStatus === statusFilter);
+  // Use domain service for sorting and filtering matches
+  const { sortedAndFilteredMatches, groupedMatches } = useMemo(() => {
+    if (!myMatchesData?.matches) {
+      return { sortedAndFilteredMatches: [], groupedMatches: { priorityMatches: [], publishedMatches: [] } };
     }
 
-    // Enhanced sorting with proper date/time parsing and priority
-    return filtered.sort((a, b) => {
-      // Priority sorting: NONE and DRAFT come first (urgent tasks)
-      const getPriority = (status: ReportStatus) => {
-        switch (status) {
-          case ReportStatus.NONE:
-            return 1; // Highest priority - needs to be created
-          case ReportStatus.DRAFT:
-            return 2; // Second priority - needs to be completed
-          case ReportStatus.PUBLISHED:
-            return 3; // Lowest priority - already done
-          default:
-            return 4;
-        }
-      };
-
-      const priorityA = getPriority(a.reportStatus);
-      const priorityB = getPriority(b.reportStatus);
-
-      // If different priorities, sort by priority
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
-      }
-
-      // Within same priority, sort by date and time (earliest first for urgent tasks, latest first for completed)
-      const parseDateTime = (dateStr: string, timeStr: string) => {
-        try {
-          // Handle different date formats that might come from CSV
-          let normalizedDate = dateStr;
-          
-          // If date is in YYYY-MM-DD format, convert to a standard format
-          if (dateStr.includes('-')) {
-            const parts = dateStr.split('-');
-            if (parts.length === 3) {
-              normalizedDate = `${parts[1]}/${parts[2]}/${parts[0]}`; // Convert to MM/DD/YYYY
-            }
-          }
-          
-          // Clean up time string - remove milliseconds if present
-          const cleanTime = timeStr.split('.')[0];
-          
-          // Create date object
-          const dateTime = new Date(`${normalizedDate} ${cleanTime}`);
-          
-          // Validate the date
-          if (isNaN(dateTime.getTime())) {
-            console.warn(`Invalid date/time: ${dateStr} ${timeStr}`);
-            return new Date(0); // Return epoch as fallback
-          }
-          
-          return dateTime;
-        } catch (error) {
-          console.warn(`Error parsing date/time: ${dateStr} ${timeStr}`, error);
-          return new Date(0); // Return epoch as fallback
-        }
-      };
-
-      const dateA = parseDateTime(a.match.date, a.match.time);
-      const dateB = parseDateTime(b.match.date, b.match.time);
-
-      // For urgent tasks (NONE/DRAFT), show earliest dates first
-      // For completed tasks (PUBLISHED), show latest dates first
-      if (priorityA <= 2) { // NONE or DRAFT
-        return dateA.getTime() - dateB.getTime(); // Ascending (earliest first)
-      } else { // PUBLISHED
-        return dateB.getTime() - dateA.getTime(); // Descending (latest first)
-      }
-    });
-  };
-
-  // Group matches by priority for display
-  const getGroupedMatches = () => {
-    const sortedMatches = getSortedAndFilteredMatches();
-    
-    const priorityMatches = sortedMatches.filter(
-      match => match.reportStatus === ReportStatus.NONE || match.reportStatus === ReportStatus.DRAFT
-    );
-    
-    const publishedMatches = sortedMatches.filter(
-      match => match.reportStatus === ReportStatus.PUBLISHED
+    const sortedAndFiltered = matchSortingService.getSortedAndFilteredMatches(
+      myMatchesData.matches,
+      statusFilter
     );
 
-    return { priorityMatches, publishedMatches };
-  };
+    const grouped = matchSortingService.groupMatchesByPriority(myMatchesData.matches);
+
+    return { sortedAndFilteredMatches: sortedAndFiltered, groupedMatches: grouped };
+  }, [myMatchesData?.matches, statusFilter, matchSortingService]);
+
+  // Use domain service for sorting reports
+  const sortedReports = useMemo(() => {
+    if (!allReportsData?.reports) return [];
+    return reportSortingService.sortReports(allReportsData.reports);
+  }, [allReportsData?.reports, reportSortingService]);
 
   const getStatusBadge = (status: ReportStatus) => {
     switch (status) {
@@ -320,12 +253,9 @@ function ReportingPage() {
                     <p className="text-sm text-gray-400 mt-2">Les matches qui vous sont assignés apparaîtront ici</p>
                   </div>
                 ) : (() => {
-                  const { priorityMatches, publishedMatches } = getGroupedMatches();
-                  
                   if (statusFilter !== 'ALL') {
                     // If filtering by specific status, show normal filtered list
-                    const filteredMatches = getSortedAndFilteredMatches();
-                    return filteredMatches.length === 0 ? (
+                    return sortedAndFilteredMatches.length === 0 ? (
                       <div className="text-center py-12 w-full">
                         <Filter className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                         <p className="text-gray-500 text-lg">Aucun match avec le statut "{getStatusFilterLabel(statusFilter)}"</p>
@@ -333,7 +263,7 @@ function ReportingPage() {
                       </div>
                     ) : (
                       <div className="space-y-4 w-full">
-                        {filteredMatches.map(renderMatchCard)}
+                        {sortedAndFilteredMatches.map(renderMatchCard)}
                       </div>
                     );
                   }
@@ -342,35 +272,35 @@ function ReportingPage() {
                   return (
                     <div className="space-y-8 w-full">
                       {/* Priority Matches (NONE and DRAFT) */}
-                      {priorityMatches.length > 0 && (
+                      {groupedMatches.priorityMatches.length > 0 && (
                         <div className="space-y-4 w-full">
                           <div className="flex items-center space-x-2">
                             <div className="h-px bg-orange-200 flex-1"></div>
                             <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">
-                              Rapports à traiter ({priorityMatches.length})
+                              Rapports à traiter ({groupedMatches.priorityMatches.length})
                             </Badge>
                             <div className="h-px bg-orange-200 flex-1"></div>
                           </div>
-                          {priorityMatches.map(renderMatchCard)}
+                          {groupedMatches.priorityMatches.map(renderMatchCard)}
                         </div>
                       )}
 
                       {/* Separator and Published Section */}
-                      {publishedMatches.length > 0 && (
+                      {groupedMatches.publishedMatches.length > 0 && (
                         <div className="space-y-4 w-full">
                           <div className="flex items-center space-x-2">
                             <div className="h-px bg-green-200 flex-1"></div>
                             <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                              Rapports publiés ({publishedMatches.length})
+                              Rapports publiés ({groupedMatches.publishedMatches.length})
                             </Badge>
                             <div className="h-px bg-green-200 flex-1"></div>
                           </div>
-                          {publishedMatches.map(renderMatchCard)}
+                          {groupedMatches.publishedMatches.map(renderMatchCard)}
                         </div>
                       )}
 
                       {/* Empty state if no matches at all */}
-                      {priorityMatches.length === 0 && publishedMatches.length === 0 && (
+                      {groupedMatches.priorityMatches.length === 0 && groupedMatches.publishedMatches.length === 0 && (
                         <div className="text-center py-12 w-full">
                           <ClipboardList className="h-16 w-16 mx-auto text-gray-300 mb-4" />
                           <p className="text-gray-500 text-lg">Aucun match assigné</p>
@@ -413,7 +343,7 @@ function ReportingPage() {
                   </div>
                 ) : (
                   <ReportsTable
-                    reports={allReportsData.reports}
+                    reports={sortedReports}
                     currentAssessorId={user?.id || ''}
                   />
                 )}
