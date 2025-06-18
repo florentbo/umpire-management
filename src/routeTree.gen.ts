@@ -12,6 +12,8 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as UmpireDashboardImport } from './routes/umpire/dashboard'
+import { Route as ManagerReportingImport } from './routes/manager/reporting'
+import { Route as ManagerAvailabilityImport } from './routes/manager/availability'
 import { Route as ManagerAssessmentMatchIdImport } from './routes/manager/assessment.$matchId'
 import { Route as ManagerDashboardImport } from './routes/manager/dashboard'
 import { Route as LoginImport } from './routes/login'
@@ -21,6 +23,16 @@ import { Route as IndexImport } from './routes/index'
 
 const UmpireDashboardRoute = UmpireDashboardImport.update({
   path: '/umpire/dashboard',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ManagerReportingRoute = ManagerReportingImport.update({
+  path: '/manager/reporting',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ManagerAvailabilityRoute = ManagerAvailabilityImport.update({
+  path: '/manager/availability',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -69,6 +81,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerDashboardImport
       parentRoute: typeof rootRoute
     }
+    '/manager/reporting': {
+      id: '/manager/reporting'
+      path: '/manager/reporting'
+      fullPath: '/manager/reporting'
+      preLoaderRoute: typeof ManagerReportingImport
+      parentRoute: typeof rootRoute
+    }
+    '/manager/availability': {
+      id: '/manager/availability'
+      path: '/manager/availability'
+      fullPath: '/manager/availability'
+      preLoaderRoute: typeof ManagerAvailabilityImport
+      parentRoute: typeof rootRoute
+    }
     '/manager/assessment/$matchId': {
       id: '/manager/assessment/$matchId'
       path: '/manager/assessment/$matchId'
@@ -92,6 +118,8 @@ export const routeTree = rootRoute.addChildren({
   IndexRoute,
   LoginRoute,
   ManagerDashboardRoute,
+  ManagerReportingRoute,
+  ManagerAvailabilityRoute,
   ManagerAssessmentMatchIdRoute,
   UmpireDashboardRoute,
 })
