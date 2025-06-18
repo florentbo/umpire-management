@@ -53,9 +53,6 @@ export function CreateAssessmentView({
           <p className="text-red-700 mb-4">
             Vous n'êtes pas autorisé à créer une évaluation pour ce match.
           </p>
-          <Button onClick={() => router.navigate({ to: '/manager/reporting' })}>
-            Retour au Reporting
-          </Button>
         </CardContent>
       </Card>
     );

@@ -136,9 +136,6 @@ export function EditAssessmentView({
           <p className="text-red-700 mb-4">
             Vous n'êtes pas autorisé à modifier cette évaluation.
           </p>
-          <Button onClick={() => router.navigate({ to: '/manager/reporting' })}>
-            Retour au Reporting
-          </Button>
         </CardContent>
       </Card>
     );

@@ -87,7 +87,11 @@ function AssessmentPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen w-full bg-gray-50">
-        <Header title={t('common:status.loading')} showNavigation={false} />
+        <Header 
+          title={t('common:status.loading')} 
+          showNavigation={false}
+          showBackButton={true}
+        />
         <div className="w-full px-4 py-6 lg:px-8 xl:px-12">
           <div className="animate-pulse space-y-6 w-full">
             <div className="h-32 bg-gray-200 rounded-lg w-full"></div>
@@ -101,7 +105,11 @@ function AssessmentPage() {
   if (!match || !assessmentConfig) {
     return (
       <div className="min-h-screen w-full bg-gray-50">
-        <Header title={t('dashboard:match.info.notFound')} showNavigation={false} />
+        <Header 
+          title={t('dashboard:match.info.notFound')} 
+          showNavigation={false}
+          showBackButton={true}
+        />
         <div className="w-full px-4 py-6 text-center">
           <AlertCircle className="h-16 w-16 mx-auto text-gray-300 mb-4" />
           <p className="text-gray-500 text-lg">{t('dashboard:match.info.notFoundDescription')}</p>
@@ -173,7 +181,11 @@ function AssessmentPage() {
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
-      <Header title={getPageTitle(reportStatus)} showNavigation={false} />
+      <Header 
+        title={getPageTitle(reportStatus)} 
+        showNavigation={false}
+        showBackButton={true}
+      />
       
       <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="w-full max-w-none space-y-8">

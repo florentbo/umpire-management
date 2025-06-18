@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu } from 'lucide-react';
+import { LogOut, Menu, ArrowLeft } from 'lucide-react';
 import { authService } from '@/lib/auth';
 import { useRouter } from '@tanstack/react-router';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
@@ -11,9 +11,20 @@ interface HeaderProps {
   showMenu?: boolean;
   onMenuClick?: () => void;
   showNavigation?: boolean;
+  showBackButton?: boolean;
+  backButtonText?: string;
+  onBackClick?: () => void;
 }
 
-export function Header({ title, showMenu, onMenuClick, showNavigation = true }: HeaderProps) {
+export function Header({ 
+  title, 
+  showMenu, 
+  onMenuClick, 
+  showNavigation = true,
+  showBackButton = false,
+  backButtonText = "Retour au Reporting",
+  onBackClick
+}: HeaderProps) {
   const router = useRouter();
   const user = authService.getCurrentUser();
   const { t } = useTranslation('common');
@@ -21,6 +32,14 @@ export function Header({ title, showMenu, onMenuClick, showNavigation = true }: 
   const handleLogout = () => {
     authService.logout();
     router.navigate({ to: '/login' });
+  };
+
+  const handleBackClick = () => {
+    if (onBackClick) {
+      onBackClick();
+    } else {
+      router.navigate({ to: '/manager/reporting' });
+    }
   };
 
   return (
@@ -33,6 +52,20 @@ export function Header({ title, showMenu, onMenuClick, showNavigation = true }: 
                 <Menu className="h-5 w-5" />
               </Button>
             )}
+            
+            {/* Back Button */}
+            {showBackButton && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleBackClick}
+                className="flex items-center space-x-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">{backButtonText}</span>
+              </Button>
+            )}
+            
             <h1 className="font-bold text-lg text-gray-800 truncate">{title}</h1>
           </div>
           

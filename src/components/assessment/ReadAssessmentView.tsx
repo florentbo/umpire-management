@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from '@tanstack/react-router';
 import { UmpireAssessment } from './UmpireAssessment';
 import { GradeDisplay } from '@/presentation/components/GradeDisplay';
 import { Button } from '@/components/ui/button';
@@ -21,8 +20,6 @@ export function ReadAssessmentView({
   matchId, 
   assessorId 
 }: ReadAssessmentViewProps) {
-  const router = useRouter();
-
   const [isVerticalView, setIsVerticalView] = useState(false);
   
   // Assessment state for display
@@ -156,10 +153,6 @@ export function ReadAssessmentView({
         >
           {isVerticalView ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
           <span>{isVerticalView ? 'Vue Verticale' : 'Côte à Côte'}</span>
-        </Button>
-
-        <Button onClick={() => router.navigate({ to: '/manager/reporting' })}>
-          Retour au Reporting
         </Button>
       </div>
 
