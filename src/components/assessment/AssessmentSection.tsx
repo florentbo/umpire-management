@@ -23,7 +23,8 @@ interface AssessmentSectionProps {
   hasRemarks?: boolean;
   remarks?: string;
   onRemarksChange?: (remarks: string) => void;
-  readOnly?: boolean; // New prop for read-only mode
+  readOnly?: boolean;
+  topicName?: string; // Add topicName prop
 }
 
 export function AssessmentSection({ 
@@ -34,7 +35,8 @@ export function AssessmentSection({
   hasRemarks = false,
   remarks = '',
   onRemarksChange,
-  readOnly = false
+  readOnly = false,
+  topicName
 }: AssessmentSectionProps) {
   const { t } = useTranslation('common');
 

@@ -7,6 +7,13 @@ interface ReportsTableProps {
 }
 
 export function ReportsTable({ reports, currentAssessorId }: ReportsTableProps) {
+  // Sort reports by match date and time (earliest first)
+  const sortedReports = [...reports].sort((a, b) => {
+    const dateA = new Date(`${a.matchInfo.date} ${a.matchInfo.time}`);
+    const dateB = new Date(`${b.matchInfo.date} ${b.matchInfo.time}`);
+    return dateA.getTime() - dateB.getTime();
+  });
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -33,7 +40,7 @@ export function ReportsTable({ reports, currentAssessorId }: ReportsTableProps) 
           </tr>
         </thead>
         <tbody>
-          {reports.map((report) => (
+          {sortedReports.map((report) => (
             <ReportTableRow
               key={report.id}
               report={report}

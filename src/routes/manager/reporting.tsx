@@ -33,11 +33,61 @@ function ReportingPage() {
   // Get all published reports
   const { data: allReportsData, isLoading: loadingAllReports } = useGetAllPublishedReports();
 
-  // Filter matches based on selected status
-  const filteredMatches = myMatchesData?.matches?.filter(match => {
-    if (statusFilter === 'ALL') return true;
-    return match.reportStatus === statusFilter;
-  }) || [];
+  // Sort and filter matches with business priority
+  const getSortedAndFilteredMatches = () => {
+    if (!myMatchesData?.matches) return [];
+
+    // First filter by status if needed
+    let filtered = myMatchesData.matches;
+    if (statusFilter !== 'ALL') {
+      filtered = filtered.filter(match => match.reportStatus === statusFilter);
+    }
+
+    // Sort by priority: NONE and DRAFT first, then PUBLISHED
+    // Within each group, sort by date/time (earliest first)
+    return filtered.sort((a, b) => {
+      // Priority sorting: NONE and DRAFT come first
+      const getPriority = (status: ReportStatus) => {
+        switch (status) {
+          case ReportStatus.NONE:
+            return 1;
+          case ReportStatus.DRAFT:
+            return 2;
+          case ReportStatus.PUBLISHED:
+            return 3;
+          default:
+            return 4;
+        }
+      };
+
+      const priorityA = getPriority(a.reportStatus);
+      const priorityB = getPriority(b.reportStatus);
+
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // Within same priority, sort by date and time (earliest first)
+      const dateA = new Date(`${a.match.date} ${a.match.time}`);
+      const dateB = new Date(`${b.match.date} ${b.match.time}`);
+      return dateA.getTime() - dateB.getTime();
+    });
+  };
+
+  // Group matches by priority for display
+  const getGroupedMatches = () => {
+    const sortedMatches = getSortedAndFilteredMatches();
+    
+    const priorityMatches = sortedMatches.filter(
+      match => match.reportStatus === ReportStatus.NONE || match.reportStatus === ReportStatus.DRAFT
+    );
+    
+    const publishedMatches = sortedMatches.filter(
+      match => match.reportStatus === ReportStatus.PUBLISHED
+    );
+
+    return { priorityMatches, publishedMatches };
+  };
 
   const getStatusBadge = (status: ReportStatus) => {
     switch (status) {
@@ -99,6 +149,37 @@ function ReportingPage() {
     if (status === 'ALL') return myMatchesData.matches.length;
     return myMatchesData.matches.filter(match => match.reportStatus === status).length;
   };
+
+  const renderMatchCard = (matchWithStatus: any) => (
+    <Card key={matchWithStatus.match.id.value} className="border-l-4 border-l-blue-500 w-full">
+      <CardContent className="p-4 w-full">
+        <div className="flex justify-between items-start w-full">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-lg">
+              {matchWithStatus.match.homeTeam} vs {matchWithStatus.match.awayTeam}
+            </div>
+            <div className="text-sm text-gray-600 mt-1">
+              {matchWithStatus.match.division}
+            </div>
+            <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
+              <div className="flex items-center space-x-1">
+                <Calendar className="h-3 w-3" />
+                <span>{format(new Date(matchWithStatus.match.date), 'MMM d, yyyy')} à {matchWithStatus.match.time}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <User className="h-3 w-3" />
+                <span>{matchWithStatus.match.umpireAName} & {matchWithStatus.match.umpireBName}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-end space-y-2 ml-4">
+            {getStatusBadge(matchWithStatus.reportStatus)}
+            {getActionButton(matchWithStatus)}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen w-full bg-gray-50">
@@ -177,46 +258,67 @@ function ReportingPage() {
                     <p className="text-gray-500 text-lg">Aucun match assigné</p>
                     <p className="text-sm text-gray-400 mt-2">Les matches qui vous sont assignés apparaîtront ici</p>
                   </div>
-                ) : filteredMatches.length === 0 ? (
-                  <div className="text-center py-12 w-full">
-                    <Filter className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                    <p className="text-gray-500 text-lg">Aucun match avec le statut "{getStatusFilterLabel(statusFilter)}"</p>
-                    <p className="text-sm text-gray-400 mt-2">Essayez de changer le filtre pour voir d'autres matches</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4 w-full">
-                    {filteredMatches.map((matchWithStatus) => (
-                      <Card key={matchWithStatus.match.id.value} className="border-l-4 border-l-blue-500 w-full">
-                        <CardContent className="p-4 w-full">
-                          <div className="flex justify-between items-start w-full">
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-lg">
-                                {matchWithStatus.match.homeTeam} vs {matchWithStatus.match.awayTeam}
-                              </div>
-                              <div className="text-sm text-gray-600 mt-1">
-                                {matchWithStatus.match.division}
-                              </div>
-                              <div className="flex items-center space-x-4 text-xs text-gray-500 mt-2">
-                                <div className="flex items-center space-x-1">
-                                  <Calendar className="h-3 w-3" />
-                                  <span>{format(new Date(matchWithStatus.match.date), 'MMM d, yyyy')}</span>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                  <User className="h-3 w-3" />
-                                  <span>{matchWithStatus.match.umpireAName} & {matchWithStatus.match.umpireBName}</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end space-y-2 ml-4">
-                              {getStatusBadge(matchWithStatus.reportStatus)}
-                              {getActionButton(matchWithStatus)}
-                            </div>
+                ) : (() => {
+                  const { priorityMatches, publishedMatches } = getGroupedMatches();
+                  
+                  if (statusFilter !== 'ALL') {
+                    // If filtering by specific status, show normal filtered list
+                    const filteredMatches = getSortedAndFilteredMatches();
+                    return filteredMatches.length === 0 ? (
+                      <div className="text-center py-12 w-full">
+                        <Filter className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                        <p className="text-gray-500 text-lg">Aucun match avec le statut "{getStatusFilterLabel(statusFilter)}"</p>
+                        <p className="text-sm text-gray-400 mt-2">Essayez de changer le filtre pour voir d'autres matches</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4 w-full">
+                        {filteredMatches.map(renderMatchCard)}
+                      </div>
+                    );
+                  }
+
+                  // Show grouped view when "ALL" is selected
+                  return (
+                    <div className="space-y-8 w-full">
+                      {/* Priority Matches (NONE and DRAFT) */}
+                      {priorityMatches.length > 0 && (
+                        <div className="space-y-4 w-full">
+                          <div className="flex items-center space-x-2">
+                            <div className="h-px bg-orange-200 flex-1"></div>
+                            <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">
+                              Rapports à traiter ({priorityMatches.length})
+                            </Badge>
+                            <div className="h-px bg-orange-200 flex-1"></div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                          {priorityMatches.map(renderMatchCard)}
+                        </div>
+                      )}
+
+                      {/* Separator and Published Section */}
+                      {publishedMatches.length > 0 && (
+                        <div className="space-y-4 w-full">
+                          <div className="flex items-center space-x-2">
+                            <div className="h-px bg-green-200 flex-1"></div>
+                            <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                              Rapports publiés ({publishedMatches.length})
+                            </Badge>
+                            <div className="h-px bg-green-200 flex-1"></div>
+                          </div>
+                          {publishedMatches.map(renderMatchCard)}
+                        </div>
+                      )}
+
+                      {/* Empty state if no matches at all */}
+                      {priorityMatches.length === 0 && publishedMatches.length === 0 && (
+                        <div className="text-center py-12 w-full">
+                          <ClipboardList className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                          <p className="text-gray-500 text-lg">Aucun match assigné</p>
+                          <p className="text-sm text-gray-400 mt-2">Les matches qui vous sont assignés apparaîtront ici</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           )}
