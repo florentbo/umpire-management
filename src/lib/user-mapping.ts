@@ -40,9 +40,9 @@ async function loadUserMapping(): Promise<Map<string, { id: string; name: string
 export async function getUserIdFromEmail(email: string): Promise<string | null> {
   const mapping = await loadUserMapping();
   // Search by email to find the ID
-  for (const [id, userData] of mapping.entries()) {
+  for (const userData of mapping.values()) {
     if (userData.email === email) {
-      return id;
+      return userData.id;
     }
   }
   return null;
@@ -51,7 +51,7 @@ export async function getUserIdFromEmail(email: string): Promise<string | null> 
 export async function getUserNameFromEmail(email: string): Promise<string | null> {
   const mapping = await loadUserMapping();
   // Search by email to find the name
-  for (const [id, userData] of mapping.entries()) {
+  for (const userData of mapping.values()) {
     if (userData.email === email) {
       return userData.name;
     }
@@ -68,7 +68,7 @@ export async function getUserNameFromId(userId: string): Promise<string | null> 
 export async function getUserInfoFromEmail(email: string): Promise<{ id: string; name: string } | null> {
   const mapping = await loadUserMapping();
   // Search by email to find the user info
-  for (const [id, userData] of mapping.entries()) {
+  for (const userData of mapping.values()) {
     if (userData.email === email) {
       return { id: userData.id, name: userData.name };
     }

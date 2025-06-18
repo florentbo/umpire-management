@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { authService } from '@/lib/auth';
 import { format } from 'date-fns';
-import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Calendar, User, Eye, Edit, FileText, ClipboardList } from 'lucide-react';
 import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
@@ -24,7 +23,6 @@ export const Route = createFileRoute('/manager/reporting')({
 });
 
 function ReportingPage() {
-  const { t } = useTranslation('dashboard');
   const user = authService.getCurrentUser();
   const [activeView, setActiveView] = useState<'my-matches' | 'all-reports'>('my-matches');
 
