@@ -40,10 +40,12 @@ export function EditAssessmentView({
   const [umpireAScores, setUmpireAScores] = useState<Record<string, number>>({});
   const [umpireAValues, setUmpireAValues] = useState<Record<string, string>>({});
   const [umpireAConclusion, setUmpireAConclusion] = useState('');
+  const [umpireARemarks, setUmpireARemarks] = useState<Record<string, string>>({});
 
   const [umpireBScores, setUmpireBScores] = useState<Record<string, number>>({});
   const [umpireBValues, setUmpireBValues] = useState<Record<string, string>>({});
   const [umpireBConclusion, setUmpireBConclusion] = useState('');
+  const [umpireBRemarks, setUmpireBRemarks] = useState<Record<string, string>>({});
 
   // Validation refs
   const umpireARef = useRef<HTMLDivElement>(null);
@@ -66,32 +68,42 @@ export function EditAssessmentView({
       // Load Umpire A data
       const umpireAScoresMap: Record<string, number> = {};
       const umpireAValuesMap: Record<string, string> = {};
+      const umpireARemarksMap: Record<string, string> = {};
 
       existingDraft.umpireAData.topics.forEach(topic => {
         topic.questionResponses.forEach(response => {
           umpireAValuesMap[response.questionId] = response.selectedValue;
           umpireAScoresMap[response.questionId] = response.points;
         });
+        if (topic.remarks) {
+          umpireARemarksMap[topic.topicName] = topic.remarks;
+        }
       });
 
       setUmpireAScores(umpireAScoresMap);
       setUmpireAValues(umpireAValuesMap);
       setUmpireAConclusion(existingDraft.umpireAData.conclusion);
+      setUmpireARemarks(umpireARemarksMap);
 
       // Load Umpire B data
       const umpireBScoresMap: Record<string, number> = {};
       const umpireBValuesMap: Record<string, string> = {};
+      const umpireBRemarksMap: Record<string, string> = {};
 
       existingDraft.umpireBData.topics.forEach(topic => {
         topic.questionResponses.forEach(response => {
           umpireBValuesMap[response.questionId] = response.selectedValue;
           umpireBScoresMap[response.questionId] = response.points;
         });
+        if (topic.remarks) {
+          umpireBRemarksMap[topic.topicName] = topic.remarks;
+        }
       });
 
       setUmpireBScores(umpireBScoresMap);
       setUmpireBValues(umpireBValuesMap);
       setUmpireBConclusion(existingDraft.umpireBData.conclusion);
+      setUmpireBRemarks(umpireBRemarksMap);
 
       setHasUnsavedChanges(false);
       toast.success('Brouillon chargé depuis la base de données');
@@ -103,7 +115,7 @@ export function EditAssessmentView({
     if (assessmentConfig && currentDraftId) {
       setHasUnsavedChanges(true);
     }
-  }, [umpireAScores, umpireAValues, umpireAConclusion, umpireBScores, umpireBValues, umpireBConclusion, assessmentConfig, currentDraftId]);
+  }, [umpireAScores, umpireAValues, umpireAConclusion, umpireARemarks, umpireBScores, umpireBValues, umpireBConclusion, umpireBRemarks, assessmentConfig, currentDraftId]);
 
   // Auto-save draft every 30 seconds if there are changes
   useEffect(() => {
@@ -179,14 +191,15 @@ export function EditAssessmentView({
     return { isValid: true, firstInvalidField: null, fieldName: null };
   };
 
-  const buildTopics = (values: Record<string, string>, scores: Record<string, number>) => {
+  const buildTopics = (values: Record<string, string>, scores: Record<string, number>, remarks: Record<string, string>) => {
     return assessmentConfig.topics.map((topic: any) => ({
       topicName: topic.name,
       questionResponses: topic.questions.map((question: any) => ({
         questionId: question.id,
         selectedValue: values[question.id] || '',
         points: scores[question.id] || 0
-      }))
+      })),
+      remarks: remarks[topic.name] || ''
     }));
   };
 
@@ -206,12 +219,12 @@ export function EditAssessmentView({
       },
       umpireAAssessment: {
         umpireId: match.umpireAId,
-        topics: buildTopics(umpireAValues, umpireAScores),
+        topics: buildTopics(umpireAValues, umpireAScores, umpireARemarks),
         conclusion: umpireAConclusion
       },
       umpireBAssessment: {
         umpireId: match.umpireBId,
-        topics: buildTopics(umpireBValues, umpireBScores),
+        topics: buildTopics(umpireBValues, umpireBScores, umpireBRemarks),
         conclusion: umpireBConclusion
       },
       existingAssessmentId: currentDraftId || undefined
@@ -256,12 +269,12 @@ export function EditAssessmentView({
       },
       umpireAAssessment: {
         umpireId: match.umpireAId,
-        topics: buildTopics(umpireAValues, umpireAScores),
+        topics: buildTopics(umpireAValues, umpireAScores, umpireARemarks),
         conclusion: umpireAConclusion
       },
       umpireBAssessment: {
         umpireId: match.umpireBId,
-        topics: buildTopics(umpireBValues, umpireBScores),
+        topics: buildTopics(umpireBValues, umpireBScores, umpireBRemarks),
         conclusion: umpireBConclusion
       }
     };
@@ -387,6 +400,10 @@ export function EditAssessmentView({
             }
             conclusion={umpireAConclusion}
             onConclusionChange={setUmpireAConclusion}
+            remarks={umpireARemarks}
+            onRemarksChange={(topicName, remarks) =>
+              setUmpireARemarks(prev => ({ ...prev, [topicName]: remarks }))
+            }
             readOnly={false}
           />
         </div>
@@ -404,6 +421,10 @@ export function EditAssessmentView({
             }
             conclusion={umpireBConclusion}
             onConclusionChange={setUmpireBConclusion}
+            remarks={umpireBRemarks}
+            onRemarksChange={(topicName, remarks) =>
+              setUmpireBRemarks(prev => ({ ...prev, [topicName]: remarks }))
+            }
             readOnly={false}
           />
         </div>

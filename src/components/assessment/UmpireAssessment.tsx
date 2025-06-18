@@ -15,7 +15,10 @@ interface UmpireAssessmentProps {
   onValueChange: (field: string, value: string) => void;
   conclusion: string;
   onConclusionChange: (conclusion: string) => void;
-  readOnly?: boolean; // New prop for read-only mode
+  readOnly?: boolean;
+  // Add remarks props
+  remarks?: Record<string, string>;
+  onRemarksChange?: (topicName: string, remarks: string) => void;
 }
 
 // Map API topic names to translation keys
@@ -34,7 +37,9 @@ export function UmpireAssessment({
   onValueChange,
   conclusion,
   onConclusionChange,
-  readOnly = false
+  readOnly = false,
+  remarks = {},
+  onRemarksChange
 }: UmpireAssessmentProps) {
   const { t } = useTranslation(['common', 'assessment']);
   const { data: assessmentConfig, isLoading, error } = useQuery(
@@ -105,6 +110,7 @@ export function UmpireAssessment({
       maxScore,
       currentScore,
       hasRemarks: !!topic.remark,
+      topicName: topic.name,
     };
   });
 
@@ -134,6 +140,8 @@ export function UmpireAssessment({
             maxScore={section.maxScore}
             currentScore={section.currentScore}
             hasRemarks={section.hasRemarks}
+            remarks={remarks[section.topicName] || ''}
+            onRemarksChange={readOnly ? undefined : (newRemarks) => onRemarksChange?.(section.topicName, newRemarks)}
             readOnly={readOnly}
           />
         ))}

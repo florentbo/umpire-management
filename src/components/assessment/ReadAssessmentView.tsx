@@ -26,10 +26,12 @@ export function ReadAssessmentView({
   const [umpireAScores, setUmpireAScores] = useState<Record<string, number>>({});
   const [umpireAValues, setUmpireAValues] = useState<Record<string, string>>({});
   const [umpireAConclusion, setUmpireAConclusion] = useState('');
+  const [umpireARemarks, setUmpireARemarks] = useState<Record<string, string>>({});
 
   const [umpireBScores, setUmpireBScores] = useState<Record<string, number>>({});
   const [umpireBValues, setUmpireBValues] = useState<Record<string, string>>({});
   const [umpireBConclusion, setUmpireBConclusion] = useState('');
+  const [umpireBRemarks, setUmpireBRemarks] = useState<Record<string, string>>({});
 
   // Load published assessment data
   const { data: publishedAssessment, isLoading: assessmentLoading } = useLoadDraftAssessment(
@@ -45,32 +47,42 @@ export function ReadAssessmentView({
       // Load Umpire A data
       const umpireAScoresMap: Record<string, number> = {};
       const umpireAValuesMap: Record<string, string> = {};
+      const umpireARemarksMap: Record<string, string> = {};
 
       publishedAssessment.umpireAData.topics.forEach(topic => {
         topic.questionResponses.forEach(response => {
           umpireAValuesMap[response.questionId] = response.selectedValue;
           umpireAScoresMap[response.questionId] = response.points;
         });
+        if (topic.remarks) {
+          umpireARemarksMap[topic.topicName] = topic.remarks;
+        }
       });
 
       setUmpireAScores(umpireAScoresMap);
       setUmpireAValues(umpireAValuesMap);
       setUmpireAConclusion(publishedAssessment.umpireAData.conclusion);
+      setUmpireARemarks(umpireARemarksMap);
 
       // Load Umpire B data
       const umpireBScoresMap: Record<string, number> = {};
       const umpireBValuesMap: Record<string, string> = {};
+      const umpireBRemarksMap: Record<string, string> = {};
 
       publishedAssessment.umpireBData.topics.forEach(topic => {
         topic.questionResponses.forEach(response => {
           umpireBValuesMap[response.questionId] = response.selectedValue;
           umpireBScoresMap[response.questionId] = response.points;
         });
+        if (topic.remarks) {
+          umpireBRemarksMap[topic.topicName] = topic.remarks;
+        }
       });
 
       setUmpireBScores(umpireBScoresMap);
       setUmpireBValues(umpireBValuesMap);
       setUmpireBConclusion(publishedAssessment.umpireBData.conclusion);
+      setUmpireBRemarks(umpireBRemarksMap);
     }
   }, [publishedAssessment, assessmentConfig]);
 
@@ -167,6 +179,8 @@ export function ReadAssessmentView({
             onValueChange={() => {}} // No-op for read-only
             conclusion={umpireAConclusion}
             onConclusionChange={() => {}} // No-op for read-only
+            remarks={umpireARemarks}
+            onRemarksChange={() => {}} // No-op for read-only
             readOnly={true}
           />
         </div>
@@ -180,6 +194,8 @@ export function ReadAssessmentView({
             onValueChange={() => {}} // No-op for read-only
             conclusion={umpireBConclusion}
             onConclusionChange={() => {}} // No-op for read-only
+            remarks={umpireBRemarks}
+            onRemarksChange={() => {}} // No-op for read-only
             readOnly={true}
           />
         </div>

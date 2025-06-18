@@ -35,10 +35,12 @@ export function CreateAssessmentView({
   const [umpireAScores, setUmpireAScores] = useState<Record<string, number>>({});
   const [umpireAValues, setUmpireAValues] = useState<Record<string, string>>({});
   const [umpireAConclusion, setUmpireAConclusion] = useState('');
+  const [umpireARemarks, setUmpireARemarks] = useState<Record<string, string>>({});
 
   const [umpireBScores, setUmpireBScores] = useState<Record<string, number>>({});
   const [umpireBValues, setUmpireBValues] = useState<Record<string, string>>({});
   const [umpireBConclusion, setUmpireBConclusion] = useState('');
+  const [umpireBRemarks, setUmpireBRemarks] = useState<Record<string, string>>({});
 
   // Validation refs
   const umpireARef = useRef<HTMLDivElement>(null);
@@ -96,14 +98,15 @@ export function CreateAssessmentView({
     return { isValid: true, firstInvalidField: null, fieldName: null };
   };
 
-  const buildTopics = (values: Record<string, string>, scores: Record<string, number>) => {
+  const buildTopics = (values: Record<string, string>, scores: Record<string, number>, remarks: Record<string, string>) => {
     return assessmentConfig.topics.map((topic: any) => ({
       topicName: topic.name,
       questionResponses: topic.questions.map((question: any) => ({
         questionId: question.id,
         selectedValue: values[question.id] || '',
         points: scores[question.id] || 0
-      }))
+      })),
+      remarks: remarks[topic.name] || ''
     }));
   };
 
@@ -123,12 +126,12 @@ export function CreateAssessmentView({
       },
       umpireAAssessment: {
         umpireId: match.umpireAId,
-        topics: buildTopics(umpireAValues, umpireAScores),
+        topics: buildTopics(umpireAValues, umpireAScores, umpireARemarks),
         conclusion: umpireAConclusion
       },
       umpireBAssessment: {
         umpireId: match.umpireBId,
-        topics: buildTopics(umpireBValues, umpireBScores),
+        topics: buildTopics(umpireBValues, umpireBScores, umpireBRemarks),
         conclusion: umpireBConclusion
       }
     };
@@ -170,12 +173,12 @@ export function CreateAssessmentView({
       },
       umpireAAssessment: {
         umpireId: match.umpireAId,
-        topics: buildTopics(umpireAValues, umpireAScores),
+        topics: buildTopics(umpireAValues, umpireAScores, umpireARemarks),
         conclusion: umpireAConclusion
       },
       umpireBAssessment: {
         umpireId: match.umpireBId,
-        topics: buildTopics(umpireBValues, umpireBScores),
+        topics: buildTopics(umpireBValues, umpireBScores, umpireBRemarks),
         conclusion: umpireBConclusion
       }
     };
@@ -257,6 +260,10 @@ export function CreateAssessmentView({
             }
             conclusion={umpireAConclusion}
             onConclusionChange={setUmpireAConclusion}
+            remarks={umpireARemarks}
+            onRemarksChange={(topicName, remarks) =>
+              setUmpireARemarks(prev => ({ ...prev, [topicName]: remarks }))
+            }
             readOnly={false}
           />
         </div>
@@ -274,6 +281,10 @@ export function CreateAssessmentView({
             }
             conclusion={umpireBConclusion}
             onConclusionChange={setUmpireBConclusion}
+            remarks={umpireBRemarks}
+            onRemarksChange={(topicName, remarks) =>
+              setUmpireBRemarks(prev => ({ ...prev, [topicName]: remarks }))
+            }
             readOnly={false}
           />
         </div>
