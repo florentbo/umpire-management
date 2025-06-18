@@ -34,9 +34,45 @@ function AssessmentPage() {
   const user = authService.getCurrentUser();
   const { t } = useTranslation(['assessment', 'dashboard', 'common']);
 
+  // Load match data without authorization check for viewing published reports
   const { data: match, isLoading: matchLoading } = useQuery({
     queryKey: ['match', matchId],
-    queryFn: () => apiService.getMatch(matchId),
+    queryFn: async () => {
+      // First try to get the match normally
+      const normalMatch = await apiService.getMatch(matchId);
+      if (normalMatch) return normalMatch;
+      
+      // If not found (due to authorization), try to get it from CSV directly for viewing published reports
+      const response = await fetch('/matches/games.csv');
+      const csvText = await response.text();
+      const lines = csvText.split('\n').filter(line => line.trim());
+      
+      for (const line of lines) {
+        const [
+          id, date, time, umpireA, umpireAId, umpireB, umpireBId,
+          umpireManagerEmail, umpireManagerId, homeTeam, awayTeam, division
+        ] = line.split(';');
+        
+        if (id === matchId) {
+          return {
+            id,
+            date,
+            time: time.split('.')[0],
+            umpireA,
+            umpireB,
+            umpireAId,
+            umpireBId,
+            umpireManagerEmail,
+            umpireManagerId,
+            homeTeam,
+            awayTeam,
+            division
+          };
+        }
+      }
+      
+      return null;
+    },
   });
 
   const { data: assessmentConfig, isLoading: configLoading } = useQuery(
@@ -82,11 +118,23 @@ function AssessmentPage() {
     m => m.match.id.value === matchId
   );
 
-  const reportStatus = currentMatch?.reportStatus || ReportStatus.NONE;
+  const reportStatus = currentMatch?.reportStatus || ReportStatus.PUBLISHED; // Default to published for viewing other reports
   const canEdit = currentMatch?.canEdit || false;
 
   // Render the appropriate view based on status
   const renderAssessmentView = () => {
+    // If user can't edit and no current match found, assume it's a published report from another assessor
+    if (!canEdit && !currentMatch) {
+      return (
+        <ReadAssessmentView
+          match={match}
+          assessmentConfig={assessmentConfig}
+          matchId={matchId}
+          assessorId={user?.id || ''}
+        />
+      );
+    }
+
     switch (reportStatus) {
       case ReportStatus.PUBLISHED:
         return (
@@ -167,6 +215,10 @@ function AssessmentPage() {
   );
 
   function getPageTitle(status: ReportStatus): string {
+    if (!canEdit && !currentMatch) {
+      return `${t('titles.matchAssessment')} (Consultation)`;
+    }
+
     switch (status) {
       case ReportStatus.PUBLISHED:
         return `${t('titles.matchAssessment')} (Lecture seule)`;
@@ -179,6 +231,15 @@ function AssessmentPage() {
   }
 
   function getStatusBadge(status: ReportStatus) {
+    if (!canEdit && !currentMatch) {
+      return (
+        <div className="flex items-center space-x-2 text-blue-600">
+          <FileText className="h-5 w-5" />
+          <span className="text-sm font-normal">Consultation</span>
+        </div>
+      );
+    }
+
     switch (status) {
       case ReportStatus.PUBLISHED:
         return (

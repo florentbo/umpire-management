@@ -53,7 +53,7 @@ export function ReportTableRow({ report, isOwnReport }: ReportTableRowProps) {
         />
       </td>
 
-      {/* Assessor */}
+      {/* Assessor - Fixed to show name instead of ID */}
       <td className="px-4 py-3">
         <div className="font-medium text-sm text-blue-600">
           {report.assessorName}
