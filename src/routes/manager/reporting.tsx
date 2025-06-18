@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { authService } from '@/lib/auth';
 import { format } from 'date-fns';
 import { useState } from 'react';
-import { Calendar, User, Eye, Edit, FileText, ClipboardList } from 'lucide-react';
+import { Calendar, User, Eye, Edit, FileText, ClipboardList, Filter } from 'lucide-react';
 import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
 import { useGetAllPublishedReports } from '@/presentation/hooks/useGetAllPublishedReports';
 import { ReportsTable } from '@/presentation/components/reporting/ReportsTable';
@@ -25,12 +25,19 @@ export const Route = createFileRoute('/manager/reporting')({
 function ReportingPage() {
   const user = authService.getCurrentUser();
   const [activeView, setActiveView] = useState<'my-matches' | 'all-reports'>('my-matches');
+  const [statusFilter, setStatusFilter] = useState<ReportStatus | 'ALL'>('ALL');
 
   // Get matches with status for the current manager
   const { data: myMatchesData, isLoading: loadingMyMatches } = useGetManagerMatchesWithStatus(user?.id || '');
 
   // Get all published reports
   const { data: allReportsData, isLoading: loadingAllReports } = useGetAllPublishedReports();
+
+  // Filter matches based on selected status
+  const filteredMatches = myMatchesData?.matches?.filter(match => {
+    if (statusFilter === 'ALL') return true;
+    return match.reportStatus === statusFilter;
+  }) || [];
 
   const getStatusBadge = (status: ReportStatus) => {
     switch (status) {
@@ -70,6 +77,27 @@ function ReportingPage() {
         </Button>
       </Link>
     );
+  };
+
+  const getStatusFilterLabel = (status: ReportStatus | 'ALL') => {
+    switch (status) {
+      case 'ALL':
+        return 'Tous';
+      case ReportStatus.NONE:
+        return 'Aucun rapport';
+      case ReportStatus.DRAFT:
+        return 'Brouillons';
+      case ReportStatus.PUBLISHED:
+        return 'Publiés';
+      default:
+        return 'Inconnu';
+    }
+  };
+
+  const getStatusCount = (status: ReportStatus | 'ALL') => {
+    if (!myMatchesData?.matches) return 0;
+    if (status === 'ALL') return myMatchesData.matches.length;
+    return myMatchesData.matches.filter(match => match.reportStatus === status).length;
   };
 
   return (
@@ -114,6 +142,33 @@ function ReportingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="w-full">
+                {/* Status Filter */}
+                <div className="mb-6">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Filter className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">Filtrer par statut:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(['ALL', ReportStatus.NONE, ReportStatus.DRAFT, ReportStatus.PUBLISHED] as const).map((status) => (
+                      <Button
+                        key={status}
+                        variant={statusFilter === status ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setStatusFilter(status)}
+                        className="flex items-center space-x-2"
+                      >
+                        <span>{getStatusFilterLabel(status)}</span>
+                        <Badge 
+                          variant="secondary" 
+                          className={`ml-1 ${statusFilter === status ? 'bg-white text-blue-600' : 'bg-gray-100'}`}
+                        >
+                          {getStatusCount(status)}
+                        </Badge>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
                 {loadingMyMatches ? (
                   <div className="space-y-4 w-full">
                     {Array.from({ length: 3 }).map((_, i) => (
@@ -126,9 +181,15 @@ function ReportingPage() {
                     <p className="text-gray-500 text-lg">Aucun match assigné</p>
                     <p className="text-sm text-gray-400 mt-2">Les matches qui vous sont assignés apparaîtront ici</p>
                   </div>
+                ) : filteredMatches.length === 0 ? (
+                  <div className="text-center py-12 w-full">
+                    <Filter className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500 text-lg">Aucun match avec le statut "{getStatusFilterLabel(statusFilter)}"</p>
+                    <p className="text-sm text-gray-400 mt-2">Essayez de changer le filtre pour voir d'autres matches</p>
+                  </div>
                 ) : (
                   <div className="space-y-4 w-full">
-                    {myMatchesData.matches.map((matchWithStatus) => (
+                    {filteredMatches.map((matchWithStatus) => (
                       <Card key={matchWithStatus.match.id.value} className="border-l-4 border-l-blue-500 w-full">
                         <CardContent className="p-4 w-full">
                           <div className="flex justify-between items-start w-full">
