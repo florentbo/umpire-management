@@ -1,4 +1,4 @@
-import { Match } from '@/types';
+import { Match } from '@/shared/types';
 
 export function parseMatchesFromCSV(csvContent: string): Match[] {
   const lines = csvContent.split('\n').filter(line => line.trim());

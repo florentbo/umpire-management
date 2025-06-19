@@ -10,14 +10,14 @@
 
 // Import Routes
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as UmpireDashboardImport } from './routes/umpire/dashboard'
-import { Route as ManagerReportingImport } from './routes/manager/reporting'
-import { Route as ManagerAvailabilityImport } from './routes/manager/availability'
-import { Route as ManagerAssessmentMatchIdImport } from './routes/manager/assessment.$matchId'
-import { Route as ManagerDashboardImport } from './routes/manager/dashboard'
-import { Route as LoginImport } from './routes/login'
-import { Route as IndexImport } from './routes/index'
+import { Route as rootRoute } from './presentation/routes/__root'
+import { Route as UmpireDashboardImport } from './presentation/routes/umpire/dashboard'
+import { Route as ManagerReportingImport } from './presentation/routes/manager/reporting'
+import { Route as ManagerAvailabilityImport } from './presentation/routes/manager/availability'
+import { Route as ManagerAssessmentMatchIdImport } from './presentation/routes/manager/assessment.$matchId'
+import { Route as ManagerDashboardImport } from './presentation/routes/manager/dashboard'
+import { Route as LoginImport } from './presentation/routes/login'
+import { Route as IndexImport } from './presentation/routes/index'
 
 // Create/Update Routes
 

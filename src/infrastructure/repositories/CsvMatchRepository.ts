@@ -2,7 +2,7 @@ import { MatchRepository } from '@/domain/repositories/MatchRepository';
 import { MatchInfo } from '@/domain/entities/MatchReport';
 import { MatchId } from '@/domain/entities/Assessment';
 import { parseMatchesFromCSV } from '@/lib/csv-parser';
-import { Match } from '@/types';
+import { Match } from '@/shared/types';
 
 // Lazy-load and cache CSV matches
 let csvMatchesCache: Match[] | null = null;

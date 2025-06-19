@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Header } from '@/components/layout/Header';
+import { Header } from '@/presentation/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiService } from '@/lib/api';
@@ -11,12 +11,12 @@ import { format } from 'date-fns';
 import { AlertCircle, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAssessmentConfig } from '@/lib/api-client';
-import { AssessmentConfig } from '../../../dist/api';
+import { AssessmentConfig } from '../../../../dist/api';
 
 // Import the specialized components
-import { CreateAssessmentView } from '@/components/assessment/CreateAssessmentView';
-import { EditAssessmentView } from '@/components/assessment/EditAssessmentView';
-import { ReadAssessmentView } from '@/components/assessment/ReadAssessmentView';
+import { CreateAssessmentView } from '@/presentation/components/assessment/CreateAssessmentView';
+import { EditAssessmentView } from '@/presentation/components/assessment/EditAssessmentView';
+import { ReadAssessmentView } from '@/presentation/components/assessment/ReadAssessmentView';
 
 export const Route = createFileRoute('/manager/assessment/$matchId')({
   beforeLoad: () => {

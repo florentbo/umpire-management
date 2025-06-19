@@ -1,4 +1,4 @@
-import { Match, Assessment, Report } from '@/types';
+import { Match, Assessment, Report } from '@/shared/types';
 import { parseMatchesFromCSV } from './csv-parser';
 import { authService } from './auth';
 

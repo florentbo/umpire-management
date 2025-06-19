@@ -1,4 +1,4 @@
-import { User } from '@/types';
+import { User } from '@/shared/types';
 
 // User mapping data
 let userMappingCache: Map<string, { id: string; name: string; email: string }> | null = null;

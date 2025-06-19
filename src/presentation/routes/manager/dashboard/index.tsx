@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Header } from '@/components/layout/Header';
+import { Header } from '@/presentation/components/layout/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { authService } from '@/lib/auth';
 import { useTranslation } from 'react-i18next';

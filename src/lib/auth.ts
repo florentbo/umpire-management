@@ -1,4 +1,4 @@
-import { User } from '@/types';
+import { User } from '@/shared/types';
 import { createUserWithMapping } from './user-mapping';
 
 class AuthService {

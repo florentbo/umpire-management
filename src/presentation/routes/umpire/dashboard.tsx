@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Header } from '@/components/layout/Header';
+import { Header } from '@/presentation/components/layout/Header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiService } from '@/lib/api';
 import { authService } from '@/lib/auth';
