@@ -3,6 +3,7 @@ import { DIContainer } from '../../infrastructure/di/Container';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { CreateAssessmentRequest, CreateAssessmentResponse } from '@/application/usecases/CreateAssessmentUseCase';
 
 // Create a Supabase-based container for production
 const createSupabaseContainer = (): DIContainer => {
@@ -19,8 +20,8 @@ export function useCreateAssessment() {
   const queryClient = useQueryClient();
   const createAssessmentUseCase = container.getCreateAssessmentUseCase();
 
-  return useMutation<any, Error, any>({
-    mutationFn: (request: any) => createAssessmentUseCase.execute(request),
+  return useMutation<CreateAssessmentResponse, Error, CreateAssessmentRequest>({
+    mutationFn: (request: CreateAssessmentRequest) => createAssessmentUseCase.execute(request),
     onSuccess: (response, variables) => {
       toast.success(t('messages.success.saved'));
       console.log('Assessment created:', {

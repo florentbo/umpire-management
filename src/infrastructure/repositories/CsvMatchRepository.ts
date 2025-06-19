@@ -2,12 +2,13 @@ import { MatchRepository } from '@/domain/repositories/MatchRepository';
 import { MatchInfo } from '@/domain/entities/MatchReport';
 import { MatchId } from '@/domain/entities/Assessment';
 import { parseMatchesFromCSV } from '@/lib/csv-parser';
+import { Match } from '@/types';
 
 // Lazy-load and cache CSV matches
-let csvMatchesCache: any[] | null = null;
-let csvMatchesPromise: Promise<any[]> | null = null;
+let csvMatchesCache: Match[] | null = null;
+let csvMatchesPromise: Promise<Match[]> | null = null;
 
-async function loadCsvMatches(): Promise<any[]> {
+async function loadCsvMatches(): Promise<Match[]> {
   if (csvMatchesCache) return csvMatchesCache;
   if (csvMatchesPromise) return csvMatchesPromise;
   
@@ -40,7 +41,7 @@ export class CsvMatchRepository implements MatchRepository {
     return match ? this.mapToMatchInfo(match) : null;
   }
 
-  private mapToMatchInfo(csvMatch: any): MatchInfo {
+  private mapToMatchInfo(csvMatch: Match): MatchInfo {
     return {
       id: { value: csvMatch.id },
       homeTeam: csvMatch.homeTeam,
