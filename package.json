@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npm run generate-api && vite",
+    "check": "npm run generate-api && tsc -b",
     "build": "npm run generate-api && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

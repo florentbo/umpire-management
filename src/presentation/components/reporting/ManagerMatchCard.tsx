@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Link } from '@tanstack/react-router';
 import { Calendar, User, Eye, Edit } from 'lucide-react';
 import { format } from 'date-fns';
-import { ReportStatus } from '@/domain/entities/MatchReportStatus';
+import { ReportStatus, MatchWithReportStatus } from '@/domain/entities/MatchReportStatus';
 import React from 'react';
 
 export interface ManagerMatchCardProps {
-  matchWithStatus: any;
+  matchWithStatus: MatchWithReportStatus;
 }
 
 function getStatusBadge(status: ReportStatus) {
@@ -24,7 +24,7 @@ function getStatusBadge(status: ReportStatus) {
   }
 }
 
-function getActionButton(matchWithStatus: any) {
+function getActionButton(matchWithStatus: MatchWithReportStatus) {
   if (!matchWithStatus.canEdit) return null;
   const isPublished = matchWithStatus.reportStatus === ReportStatus.PUBLISHED;
   return (
@@ -61,6 +61,7 @@ function formatMatchDate(dateStr: string, timeStr: string) {
     }
     return `${displayDate} à ${cleanTime}`;
   } catch (error) {
+    console.log(error);
     return `${dateStr} à ${timeStr}`;
   }
 }
@@ -94,4 +95,4 @@ export const ManagerMatchCard: React.FC<ManagerMatchCardProps> = ({ matchWithSta
       </div>
     </CardContent>
   </Card>
-); 
+);
