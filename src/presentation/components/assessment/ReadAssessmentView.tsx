@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
 import { UmpireAssessment } from './UmpireAssessment';
 import { GradeDisplay } from '@/presentation/components/GradeDisplay';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useLoadDraftAssessment } from '@/presentation/hooks/useLoadDraftAssessment';
-import { ToggleLeft, ToggleRight, Eye, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { useAssessmentForm } from '@/presentation/hooks/useAssessmentForm';
+import { ToggleLeft, ToggleRight, Eye } from 'lucide-react';
 
 interface ReadAssessmentViewProps {
   match: any;
@@ -20,71 +19,18 @@ export function ReadAssessmentView({
   matchId, 
   assessorId 
 }: ReadAssessmentViewProps) {
-  const [isVerticalView, setIsVerticalView] = useState(false);
-  
-  // Assessment state for display
-  const [umpireAScores, setUmpireAScores] = useState<Record<string, number>>({});
-  const [umpireAValues, setUmpireAValues] = useState<Record<string, string>>({});
-  const [umpireAConclusion, setUmpireAConclusion] = useState('');
-  const [umpireARemarks, setUmpireARemarks] = useState<Record<string, string>>({});
-
-  const [umpireBScores, setUmpireBScores] = useState<Record<string, number>>({});
-  const [umpireBValues, setUmpireBValues] = useState<Record<string, string>>({});
-  const [umpireBConclusion, setUmpireBConclusion] = useState('');
-  const [umpireBRemarks, setUmpireBRemarks] = useState<Record<string, string>>({});
-
   // Load published assessment data
   const { data: publishedAssessment, isLoading: assessmentLoading } = useLoadDraftAssessment(
     matchId,
     assessorId
   );
 
-  // Load assessment data when available
-  useEffect(() => {
-    if (publishedAssessment && assessmentConfig) {
-      console.log('Loading published assessment:', publishedAssessment);
-
-      // Load Umpire A data
-      const umpireAScoresMap: Record<string, number> = {};
-      const umpireAValuesMap: Record<string, string> = {};
-      const umpireARemarksMap: Record<string, string> = {};
-
-      publishedAssessment.umpireAData.topics.forEach(topic => {
-        topic.questionResponses.forEach(response => {
-          umpireAValuesMap[response.questionId] = response.selectedValue;
-          umpireAScoresMap[response.questionId] = response.points;
-        });
-        if (topic.remarks) {
-          umpireARemarksMap[topic.topicName] = topic.remarks;
-        }
-      });
-
-      setUmpireAScores(umpireAScoresMap);
-      setUmpireAValues(umpireAValuesMap);
-      setUmpireAConclusion(publishedAssessment.umpireAData.conclusion);
-      setUmpireARemarks(umpireARemarksMap);
-
-      // Load Umpire B data
-      const umpireBScoresMap: Record<string, number> = {};
-      const umpireBValuesMap: Record<string, string> = {};
-      const umpireBRemarksMap: Record<string, string> = {};
-
-      publishedAssessment.umpireBData.topics.forEach(topic => {
-        topic.questionResponses.forEach(response => {
-          umpireBValuesMap[response.questionId] = response.selectedValue;
-          umpireBScoresMap[response.questionId] = response.points;
-        });
-        if (topic.remarks) {
-          umpireBRemarksMap[topic.topicName] = topic.remarks;
-        }
-      });
-
-      setUmpireBScores(umpireBScoresMap);
-      setUmpireBValues(umpireBValuesMap);
-      setUmpireBConclusion(publishedAssessment.umpireBData.conclusion);
-      setUmpireBRemarks(umpireBRemarksMap);
-    }
-  }, [publishedAssessment, assessmentConfig]);
+  // Use shared hook for form state and logic (read-only mode)
+  const {
+    formState,
+    isVerticalView,
+    setIsVerticalView
+  } = useAssessmentForm(assessmentConfig, publishedAssessment, false);
 
   const calculateGrade = (scores: Record<string, number>) => {
     if (!assessmentConfig) return { totalScore: 0, maxScore: 0, percentage: 0, level: 'AT_CURRENT_LEVEL' };
@@ -119,8 +65,8 @@ export function ReadAssessmentView({
     );
   }
 
-  const umpireAGrade = calculateGrade(umpireAScores);
-  const umpireBGrade = calculateGrade(umpireBScores);
+  const umpireAGrade = calculateGrade(formState.umpireAScores);
+  const umpireBGrade = calculateGrade(formState.umpireBScores);
 
   return (
     <div className="space-y-6 w-full">
@@ -173,13 +119,13 @@ export function ReadAssessmentView({
         <div className="w-full">
           <UmpireAssessment
             umpireName={`Arbitre A: ${match.umpireA}`}
-            scores={umpireAScores}
+            scores={formState.umpireAScores}
             onScoreChange={() => {}} // No-op for read-only
-            selectedValues={umpireAValues}
+            selectedValues={formState.umpireAValues}
             onValueChange={() => {}} // No-op for read-only
-            conclusion={umpireAConclusion}
+            conclusion={formState.umpireAConclusion}
             onConclusionChange={() => {}} // No-op for read-only
-            remarks={umpireARemarks}
+            remarks={formState.umpireARemarks}
             onRemarksChange={() => {}} // No-op for read-only
             readOnly={true}
           />
@@ -188,40 +134,18 @@ export function ReadAssessmentView({
         <div className="w-full">
           <UmpireAssessment
             umpireName={`Arbitre B: ${match.umpireB}`}
-            scores={umpireBScores}
+            scores={formState.umpireBScores}
             onScoreChange={() => {}} // No-op for read-only
-            selectedValues={umpireBValues}
+            selectedValues={formState.umpireBValues}
             onValueChange={() => {}} // No-op for read-only
-            conclusion={umpireBConclusion}
+            conclusion={formState.umpireBConclusion}
             onConclusionChange={() => {}} // No-op for read-only
-            remarks={umpireBRemarks}
+            remarks={formState.umpireBRemarks}
             onRemarksChange={() => {}} // No-op for read-only
             readOnly={true}
           />
         </div>
       </div>
-
-      {/* Assessment Summary */}
-      {publishedAssessment && (
-        <Card className="w-full border-green-200 bg-green-50">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <span>Informations de publication</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-gray-600">
-              <div className="mb-2">
-                <strong>Assessment ID:</strong> {publishedAssessment.assessmentId}
-              </div>
-              <div>
-                <strong>Dernière mise à jour:</strong> {format(new Date(publishedAssessment.lastSavedAt), 'dd/MM/yyyy à HH:mm')}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
