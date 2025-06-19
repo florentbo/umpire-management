@@ -29,11 +29,11 @@ const TOPIC_NAME_TO_TRANSLATION_KEY: Record<string, string> = {
   GAME_MANAGEMENT: 'gameManagement',
 };
 
-export function UmpireAssessment({ 
-  umpireName, 
-  scores, 
-  onScoreChange, 
-  selectedValues, 
+export function UmpireAssessment({
+  umpireName,
+  scores,
+  onScoreChange,
+  selectedValues,
   onValueChange,
   conclusion,
   onConclusionChange,
@@ -118,7 +118,7 @@ export function UmpireAssessment({
   const maxTotalScore = sections.reduce((sum, section) => sum + section.maxScore, 0);
 
   return (
-    <Card className={`w-full ${readOnly ? 'border-green-200 bg-green-50' : ''}`}>
+    <Card className={`w-full ${readOnly ? 'border-green-200' : ''}`}>
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           <span className="flex items-center space-x-2">
@@ -145,7 +145,7 @@ export function UmpireAssessment({
             readOnly={readOnly}
           />
         ))}
-        
+
         <div className="space-y-3 pt-4 border-t border-gray-100">
           <h4 className="font-medium text-sm text-gray-700">{t('common:labels.conclusion')}</h4>
           <Textarea
