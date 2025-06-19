@@ -22,4 +22,5 @@ export interface MatchReportRepository {
   findByMatchIds(matchIds: MatchId[]): Promise<MatchReport[]>;
   findByAssessor(assessorId: string): Promise<MatchReport[]>;
   findAll(): Promise<MatchReport[]>;
+  findAllWithFilters(filters: { assessorId?: string; grade?: string }): Promise<MatchReport[]>;
 }

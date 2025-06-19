@@ -2,6 +2,11 @@ import { MatchReportRepository } from '@/domain/repositories/AssessmentRepositor
 import { ReportSummary, ReportSummaryAggregate } from '@/domain/entities/ReportSummary';
 import { getUserNameFromId } from '@/lib/user-mapping';
 
+export interface GetAllReportsRequest {
+  assessorId?: string;
+  grade?: string;
+}
+
 export interface GetAllReportsResponse {
   reports: ReportSummaryAggregate[];
 }
@@ -9,9 +14,9 @@ export interface GetAllReportsResponse {
 export class GetAllReportsUseCase {
   constructor(private readonly matchReportRepository: MatchReportRepository) {}
 
-  async execute(): Promise<GetAllReportsResponse> {
-    // Get all published reports
-    const reports = await this.matchReportRepository.findAll();
+  async execute(filters: GetAllReportsRequest = {}): Promise<GetAllReportsResponse> {
+    // Get all published reports with filters
+    const reports = await this.matchReportRepository.findAllWithFilters(filters);
 
     console.log('Raw reports from repository:', reports.length);
 

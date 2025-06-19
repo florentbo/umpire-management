@@ -134,6 +134,30 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
     });
   }
 
+  async findAllWithFilters(filters: { assessorId?: string; grade?: string }): Promise<MatchReport[]> {
+    let query = this.supabase
+      .from('match_reports')
+      .select(`*, assessments!inner (*)`)
+      .eq('assessments.status', 'PUBLISHED');
+
+    if (filters.assessorId) {
+      query = query.eq('assessments.assessor_id', filters.assessorId);
+    }
+    if (filters.grade) {
+      query = query.eq('assessments.umpire_a_data->>grade->>level', filters.grade);
+    }
+
+    const { data, error } = await query.order('submitted_at', { ascending: false });
+
+    if (error) throw new Error(`Failed to find all match reports with filters: ${error.message}`);
+    if (!data || data.length === 0) return [];
+
+    return data.map((item: any) => {
+      const assessment = this.mapToAssessmentFromJoin(item.assessments);
+      return this.mapToMatchReport(item, assessment);
+    });
+  }
+
   private mapToMatchReport(data: any, assessment: Assessment): MatchReport {
     return new MatchReport(
       { value: data.id },
