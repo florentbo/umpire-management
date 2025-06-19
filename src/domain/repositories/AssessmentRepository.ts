@@ -1,26 +1,25 @@
 import { Assessment, AssessmentId, MatchId } from '../entities/Assessment';
-import { MatchReport, MatchReportId } from '../entities/MatchReport';
+import { MatchReport } from '../entities/MatchReport';
 
 export interface AssessmentRepository {
-  save(assessment: Assessment): Promise<Assessment>;
+  // Core CRUD operations
   saveAsDraft(assessment: Assessment): Promise<Assessment>;
   saveAsPublished(assessment: Assessment): Promise<Assessment>;
   findById(id: AssessmentId): Promise<Assessment | null>;
-  findByMatchId(matchId: MatchId): Promise<Assessment[]>;
-  findByMatchIds(matchIds: MatchId[]): Promise<Assessment[]>;
-  findDraftByMatchAndAssessor(matchId: string, assessorId: string): Promise<Assessment | null>;
-  update(assessment: Assessment): Promise<Assessment>;
   updateDraft(assessment: Assessment): Promise<Assessment>;
   publishDraft(assessment: Assessment): Promise<Assessment>;
-  delete(id: AssessmentId): Promise<void>;
+  
+  // Query operations used by use cases
+  findByMatchIds(matchIds: MatchId[]): Promise<Assessment[]>;
+  findDraftByMatchAndAssessor(matchId: string, assessorId: string): Promise<Assessment | null>;
 }
 
 export interface MatchReportRepository {
+  // Core operations
   save(report: MatchReport): Promise<MatchReport>;
-  findById(id: MatchReportId): Promise<MatchReport | null>;
-  findByMatchId(matchId: MatchId): Promise<MatchReport[]>;
   findByMatchIds(matchIds: MatchId[]): Promise<MatchReport[]>;
   findByAssessor(assessorId: string): Promise<MatchReport[]>;
-  findAll(): Promise<MatchReport[]>;
+  
+  // Filtering for reporting
   findAllWithFilters(filters: { assessorId?: string; grade?: string }): Promise<MatchReport[]>;
 }

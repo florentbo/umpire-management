@@ -24,12 +24,6 @@ export interface UpdateDraftAssessmentCommand {
   umpireBData?: Partial<UmpireAssessment>;
 }
 
-export interface UpdateAssessmentCommand {
-  assessmentId: string;
-  umpireAData?: Partial<UmpireAssessment>;
-  umpireBData?: Partial<UmpireAssessment>;
-}
-
 export class AssessmentService {
   constructor(
     private readonly assessmentRepository: AssessmentRepository,
@@ -108,22 +102,6 @@ export class AssessmentService {
     return await this.assessmentRepository.findDraftByMatchAndAssessor(matchId, assessorId);
   }
 
-  async updateAssessment(command: UpdateAssessmentCommand): Promise<Assessment> {
-    const assessmentId: AssessmentId = { value: command.assessmentId };
-    
-    const existingAssessment = await this.assessmentRepository.findById(assessmentId);
-    if (!existingAssessment) {
-      throw new Error('Assessment not found');
-    }
-
-    const updatedAssessment = existingAssessment.update(
-      command.umpireAData || {},
-      command.umpireBData || {}
-    );
-
-    return await this.assessmentRepository.update(updatedAssessment);
-  }
-
   async getAssessmentById(id: string): Promise<Assessment | null> {
     const assessmentId: AssessmentId = { value: id };
     return await this.assessmentRepository.findById(assessmentId);
@@ -131,10 +109,5 @@ export class AssessmentService {
 
   async getMatchReportsByAssessor(assessorId: string): Promise<MatchReport[]> {
     return await this.matchReportRepository.findByAssessor(assessorId);
-  }
-
-  async getMatchReportsByMatch(matchId: string): Promise<MatchReport[]> {
-    const matchIdObj: MatchId = { value: matchId };
-    return await this.matchReportRepository.findByMatchId(matchIdObj);
   }
 }

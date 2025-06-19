@@ -9,10 +9,6 @@ interface SupabaseClient {
 export class SupabaseAssessmentRepository implements AssessmentRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
-  async save(assessment: Assessment): Promise<Assessment> {
-    return this.saveAsPublished(assessment);
-  }
-
   async saveAsDraft(assessment: Assessment): Promise<Assessment> {
     const data = {
       id: assessment.id.value,
@@ -76,17 +72,6 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
     return this.mapToAssessment(data);
   }
 
-  async findByMatchId(matchId: MatchId): Promise<Assessment[]> {
-    const { data, error } = await this.supabase
-      .from('assessments')
-      .select('*')
-      .eq('match_id', matchId.value);
-
-    if (error) throw new Error(`Failed to find assessments: ${error.message}`);
-
-    return data.map((item: any) => this.mapToAssessment(item));
-  }
-
   async findByMatchIds(matchIds: MatchId[]): Promise<Assessment[]> {
     if (matchIds.length === 0) return [];
 
@@ -117,26 +102,6 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
     if (!data || data.length === 0) return null;
 
     return this.mapToAssessment(data[0]);
-  }
-
-  async update(assessment: Assessment): Promise<Assessment> {
-    const data = {
-      umpire_a_data: assessment.umpireA,
-      umpire_b_data: assessment.umpireB,
-      updated_at: new Date().toISOString(),
-      last_saved_at: new Date().toISOString()
-    };
-
-    const { data: result, error } = await this.supabase
-      .from('assessments')
-      .update(data)
-      .eq('id', assessment.id.value)
-      .select()
-      .single();
-
-    if (error) throw new Error(`Failed to update assessment: ${error.message}`);
-
-    return this.mapToAssessment(result);
   }
 
   async updateDraft(assessment: Assessment): Promise<Assessment> {
@@ -179,19 +144,6 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
     if (error) throw new Error(`Failed to publish draft assessment: ${error.message}`);
 
     return this.mapToAssessment(result);
-  }
-
-  async delete(id: AssessmentId): Promise<void> {
-    const { error } = await this.supabase
-      .from('assessments')
-      .delete()
-      .eq('id', id.value);
-
-    if (error) throw new Error(`Failed to delete assessment: ${error.message}`);
-  }
-
-  async findAllWithFilters(_filters: { assessorId?: string; grade?: string }): Promise<any[]> {
-    throw new Error('findAllWithFilters is not implemented in SupabaseAssessmentRepository');
   }
 
   private mapToAssessment(data: any): Assessment {

@@ -1,5 +1,5 @@
 import { MatchReportRepository } from '@/domain/repositories/AssessmentRepository';
-import { MatchReport, MatchReportId } from '@/domain/entities/MatchReport';
+import { MatchReport } from '@/domain/entities/MatchReport';
 import { MatchId } from '@/domain/entities/Assessment';
 import { Assessment } from '@/domain/entities/Assessment';
 
@@ -29,42 +29,6 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
     if (error) throw new Error(`Failed to save match report: ${error.message}`);
 
     return this.mapToMatchReport(result, report.assessment);
-  }
-
-  async findById(id: MatchReportId): Promise<MatchReport | null> {
-    const { data, error } = await this.supabase
-      .from('match_reports')
-      .select(`
-        *,
-        assessments (*)
-      `)
-      .eq('id', id.value)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw new Error(`Failed to find match report: ${error.message}`);
-    }
-
-    const assessment = this.mapToAssessmentFromJoin(data.assessments);
-    return this.mapToMatchReport(data, assessment);
-  }
-
-  async findByMatchId(matchId: MatchId): Promise<MatchReport[]> {
-    const { data, error } = await this.supabase
-      .from('match_reports')
-      .select(`
-        *,
-        assessments (*)
-      `)
-      .eq('match_id', matchId.value);
-
-    if (error) throw new Error(`Failed to find match reports: ${error.message}`);
-
-    return data.map((item: any) => {
-      const assessment = this.mapToAssessmentFromJoin(item.assessments);
-      return this.mapToMatchReport(item, assessment);
-    });
   }
 
   async findByMatchIds(matchIds: MatchId[]): Promise<MatchReport[]> {
@@ -98,35 +62,6 @@ export class SupabaseMatchReportRepository implements MatchReportRepository {
       .eq('assessments.status', 'PUBLISHED'); // Only published reports
 
     if (error) throw new Error(`Failed to find match reports by assessor: ${error.message}`);
-
-    return data.map((item: any) => {
-      const assessment = this.mapToAssessmentFromJoin(item.assessments);
-      return this.mapToMatchReport(item, assessment);
-    });
-  }
-
-  async findAll(): Promise<MatchReport[]> {
-    console.log('Finding all published match reports...');
-    
-    const { data, error } = await this.supabase
-      .from('match_reports')
-      .select(`
-        *,
-        assessments!inner (*)
-      `)
-      .eq('assessments.status', 'PUBLISHED') // Only published reports
-      .order('submitted_at', { ascending: false });
-
-    if (error) {
-      console.error('Error finding all match reports:', error);
-      throw new Error(`Failed to find all match reports: ${error.message}`);
-    }
-
-    console.log(`Found ${data?.length || 0} published reports`);
-
-    if (!data || data.length === 0) {
-      return [];
-    }
 
     return data.map((item: any) => {
       const assessment = this.mapToAssessmentFromJoin(item.assessments);
