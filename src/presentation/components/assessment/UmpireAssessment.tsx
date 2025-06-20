@@ -1,7 +1,7 @@
 import { AssessmentSection } from './AssessmentSection';
 import { useQuery } from '@tanstack/react-query';
 import { useAssessmentConfig } from '@/lib/api-client';
-import { AssessmentConfig } from '../../../../dist/api';
+import { assessmentConfigLevelEnum } from '../../../gen/types/AssessmentConfig';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Loader2, Eye } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,7 +43,7 @@ export function UmpireAssessment({
 }: UmpireAssessmentProps) {
   const { t } = useTranslation(['common', 'assessment']);
   const { data: assessmentConfig, isLoading, error } = useQuery(
-    useAssessmentConfig(AssessmentConfig.level.JUNIOR)
+    useAssessmentConfig(assessmentConfigLevelEnum.junior)
   );
 
   if (isLoading) {

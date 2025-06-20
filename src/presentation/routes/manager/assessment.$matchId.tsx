@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { AlertCircle, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAssessmentConfig } from '@/lib/api-client';
-import { AssessmentConfig } from '../../../../dist/api';
+import { assessmentConfigLevelEnum } from '../../../gen/types/AssessmentConfig';
 
 // Import the specialized components
 import { CreateAssessmentView } from '@/presentation/components/assessment/CreateAssessmentView';
@@ -76,7 +76,7 @@ function AssessmentPage() {
   });
 
   const { data: assessmentConfig, isLoading: configLoading } = useQuery(
-    useAssessmentConfig(AssessmentConfig.level.JUNIOR)
+    useAssessmentConfig(assessmentConfigLevelEnum.junior)
   );
 
   // Check if this match has a published report or draft

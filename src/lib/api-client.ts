@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { AssessmentConfig } from '../../dist/api';
+import type { AssessmentConfigLevelEnum } from '../gen/types/AssessmentConfig';
 import { mockService } from './mock-service';
 
 // Always use mock service for now
@@ -19,7 +19,7 @@ export const queryClient = new QueryClient({
 export { apiClient };
 
 // Export query hooks
-export const useAssessmentConfig = (level: AssessmentConfig.level) => {
+export const useAssessmentConfig = (level: AssessmentConfigLevelEnum) => {
   return {
     queryKey: ['assessmentConfig', level],
     queryFn: () => apiClient.getAssessmentConfig(level),
