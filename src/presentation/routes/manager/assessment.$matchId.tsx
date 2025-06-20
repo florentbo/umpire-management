@@ -190,7 +190,7 @@ function AssessmentPage() {
       <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="w-full max-w-none space-y-8">
           {/* Match Info Header */}
-          <Card className={`w-full ${reportStatus === ReportStatus.PUBLISHED ? 'border-green-200 bg-green-50' : ''}`}>
+          <Card className={`w-full ${reportStatus === ReportStatus.PUBLISHED ? 'border-blue-200 bg-blue-50' : ''}`}>
             <CardHeader>
               <CardTitle className="text-xl flex items-center justify-between">
                 <span>{match.homeTeam} vs {match.awayTeam}</span>

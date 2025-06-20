@@ -36,9 +36,7 @@ export function ReportTableRow({ report, isOwnReport }: ReportTableRowProps) {
       {/* Umpire A */}
       <td className="px-4 py-3">
         <UmpireScoreDisplay
-          name={report.matchInfo.umpireAName}
-          totalScore={report.umpireAData.totalScore}
-          maxScore={report.umpireAData.maxScore}
+          name={report.matchInfo.umpireAName}          
           level={report.umpireAData.level}
         />
       </td>
@@ -46,9 +44,7 @@ export function ReportTableRow({ report, isOwnReport }: ReportTableRowProps) {
       {/* Umpire B */}
       <td className="px-4 py-3">
         <UmpireScoreDisplay
-          name={report.matchInfo.umpireBName}
-          totalScore={report.umpireBData.totalScore}
-          maxScore={report.umpireBData.maxScore}
+          name={report.matchInfo.umpireBName}          
           level={report.umpireBData.level}
         />
       </td>

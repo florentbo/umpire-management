@@ -134,22 +134,7 @@ function ReportingPage() {
                             <ManagerMatchCard key={matchWithStatus.match.id.value} matchWithStatus={matchWithStatus} />
                           ))}
                         </div>
-                      )}
-                      {/* Separator and Published Section */}
-                      {groupedMatches.publishedMatches.length > 0 && (
-                        <div className="space-y-4 w-full">
-                          <div className="flex items-center space-x-2">
-                            <div className="h-px bg-green-200 flex-1"></div>
-                            <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                              Rapports publiés ({groupedMatches.publishedMatches.length})
-                            </Badge>
-                            <div className="h-px bg-green-200 flex-1"></div>
-                          </div>
-                          {groupedMatches.publishedMatches.map(matchWithStatus => (
-                            <ManagerMatchCard key={matchWithStatus.match.id.value} matchWithStatus={matchWithStatus} />
-                          ))}
-                        </div>
-                      )}
+                      )}                      
                       {/* Empty state if no matches at all */}
                       {groupedMatches.priorityMatches.length === 0 && groupedMatches.publishedMatches.length === 0 && (
                         <div className="text-center py-12 w-full">

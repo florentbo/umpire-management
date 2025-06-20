@@ -71,9 +71,9 @@ export function ReadAssessmentView({
   return (
     <div className="space-y-6 w-full">
       {/* Read-only mode notification */}
-      <Card className="border-green-200 bg-green-50 w-full">
+      <Card className="border-blue-200 bg-blue-50 w-full">
         <CardContent className="p-4">
-          <div className="flex items-center space-x-2 text-green-700">
+          <div className="flex items-center space-x-2 text-blue-700">
             <Eye className="h-4 w-4" />
             <span className="text-sm">
               Ce rapport a été publié et est maintenant en mode lecture seule. 

@@ -10,11 +10,9 @@ export interface ReportStatusFilterProps {
 }
 
 function getStatusFilterLabel(status: ReportStatus | 'ALL') {
-  switch (status) {
-    case 'ALL':
-      return 'Tous';
+  switch (status) {    
     case ReportStatus.NONE:
-      return 'Aucun rapport';
+      return 'A rédiger';
     case ReportStatus.DRAFT:
       return 'Brouillons';
     case ReportStatus.PUBLISHED:
@@ -26,7 +24,7 @@ function getStatusFilterLabel(status: ReportStatus | 'ALL') {
 
 export const ReportStatusFilter: React.FC<ReportStatusFilterProps> = ({ statusFilter, setStatusFilter, getStatusCount }) => (
   <div className="flex flex-wrap gap-2">
-    {(['ALL', ReportStatus.NONE, ReportStatus.DRAFT, ReportStatus.PUBLISHED] as const).map((status) => (
+    {([ReportStatus.NONE, ReportStatus.DRAFT, ReportStatus.PUBLISHED] as const).map((status) => (
       <Button
         key={status}
         variant={statusFilter === status ? 'default' : 'outline'}
