@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { LogOut, Menu, ArrowLeft } from 'lucide-react';
+import { LogOut, Menu, ArrowLeft, Award } from 'lucide-react';
 import { authService } from '@/lib/auth';
 import { useRouter } from '@tanstack/react-router';
 import { LanguageSwitcher } from '@/components/ui/language-switcher';
@@ -66,7 +66,10 @@ export function Header({
               </Button>
             )}
             
-            <h1 className="font-bold text-lg text-gray-800 truncate">{title}</h1>
+            <div className="flex items-center space-x-2">
+              <Award className="h-6 w-6 text-blue-600" />
+              <h1 className="font-bold text-lg text-gray-800 truncate">{title}</h1>
+            </div>
           </div>
           
           {showNavigation && user?.role === 'umpire_manager' && (

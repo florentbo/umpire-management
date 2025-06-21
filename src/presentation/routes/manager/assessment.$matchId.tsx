@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Header } from '@/presentation/components/layout/Header';
+import { ManagerLayout } from '@/presentation/components/layout/ManagerLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { apiService } from '@/lib/api';
@@ -86,38 +86,32 @@ function AssessmentPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen w-full bg-gray-50">
-        <Header 
-          title={t('common:status.loading')} 
-          showNavigation={false}
-          showBackButton={true}
-        />
-        <div className="w-full px-4 py-6 lg:px-8 xl:px-12">
-          <div className="animate-pulse space-y-6 w-full">
-            <div className="h-32 bg-gray-200 rounded-lg w-full"></div>
-            <div className="h-96 bg-gray-200 rounded-lg w-full"></div>
-          </div>
+      <ManagerLayout 
+        title={t('common:status.loading')}
+        showBackButton={true}
+      >
+        <div className="animate-pulse space-y-6 w-full">
+          <div className="h-32 bg-gray-200 rounded-lg w-full"></div>
+          <div className="h-96 bg-gray-200 rounded-lg w-full"></div>
         </div>
-      </div>
+      </ManagerLayout>
     );
   }
 
   if (!match || !assessmentConfig) {
     return (
-      <div className="min-h-screen w-full bg-gray-50">
-        <Header 
-          title={t('dashboard:match.info.notFound')} 
-          showNavigation={false}
-          showBackButton={true}
-        />
-        <div className="w-full px-4 py-6 text-center">
+      <ManagerLayout 
+        title={t('dashboard:match.info.notFound')}
+        showBackButton={true}
+      >
+        <div className="w-full text-center">
           <AlertCircle className="h-16 w-16 mx-auto text-gray-300 mb-4" />
           <p className="text-gray-500 text-lg">{t('dashboard:match.info.notFoundDescription')}</p>
           <Button onClick={() => router.navigate({ to: '/manager/reporting' })} className="mt-4">
             Retour au Reporting
           </Button>
         </div>
-      </div>
+      </ManagerLayout>
     );
   }
 
@@ -180,99 +174,93 @@ function AssessmentPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-50">
-      <Header 
-        title={getPageTitle(reportStatus)} 
-        showNavigation={false}
-        showBackButton={true}
-      />
-      
-      <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
-        <div className="w-full max-w-none space-y-8">
-          {/* Match Info Header */}
-          <Card className={`w-full ${reportStatus === ReportStatus.PUBLISHED ? 'border-blue-200 bg-blue-50' : ''}`}>
-            <CardHeader>
-              <CardTitle className="text-xl flex items-center justify-between">
-                <span>{match.homeTeam} vs {match.awayTeam}</span>
-                {getStatusBadge(reportStatus)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">{t('dashboard:match.details.division')}:</span>
-                  <div className="text-gray-600">{match.division}</div>
-                </div>
-                <div>
-                  <span className="font-medium">{t('dashboard:match.details.date')}:</span>
-                  <div className="text-gray-600">{format(new Date(match.date), 'MMM d, yyyy')}</div>
-                </div>
-                <div>
-                  <span className="font-medium">{t('dashboard:match.details.time')}:</span>
-                  <div className="text-gray-600">{match.time}</div>
-                </div>
-                <div>
-                  <span className="font-medium">{t('dashboard:match.details.umpires')}:</span>
-                  <div className="text-gray-600">{match.umpireA}, {match.umpireB}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    <ManagerLayout 
+      title={getPageTitle(reportStatus)}
+      showBackButton={true}
+    >
+      {/* Match Info Header */}
+      <Card className={`w-full ${reportStatus === ReportStatus.PUBLISHED ? 'border-blue-200 bg-blue-50' : ''}`}>
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center justify-between">
+            <span>{match.homeTeam} vs {match.awayTeam}</span>
+            {getStatusBadge(reportStatus)}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <span className="font-medium text-gray-700">Date:</span>
+              <span className="ml-2 text-gray-600">
+                {format(new Date(match.date), 'dd/MM/yyyy')}
+              </span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700">Heure:</span>
+              <span className="ml-2 text-gray-600">{match.time}</span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700">Division:</span>
+              <span className="ml-2 text-gray-600">{match.division}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm">
+            <div>
+              <span className="font-medium text-gray-700">Arbitre A:</span>
+              <span className="ml-2 text-gray-600">{match.umpireA}</span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-700">Arbitre B:</span>
+              <span className="ml-2 text-gray-600">{match.umpireB}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* Render the appropriate assessment view */}
-          {renderAssessmentView()}
-        </div>
-      </div>
-    </div>
+      {/* Assessment Content */}
+      {renderAssessmentView()}
+    </ManagerLayout>
   );
 
   function getPageTitle(status: ReportStatus): string {
-    if (!canEdit && !currentMatch) {
-      return `${t('titles.matchAssessment')} (Consultation)`;
-    }
-
     switch (status) {
       case ReportStatus.PUBLISHED:
-        return `${t('titles.matchAssessment')} (Lecture seule)`;
+        return t('assessment:read.title');
       case ReportStatus.DRAFT:
-        return `${t('titles.matchAssessment')} (Brouillon)`;
+        return t('assessment:edit.title');
       case ReportStatus.NONE:
       default:
-        return t('titles.matchAssessment');
+        return t('assessment:create.title');
     }
   }
 
   function getStatusBadge(status: ReportStatus) {
-    if (!canEdit && !currentMatch) {
-      return (
-        <div className="flex items-center space-x-2 text-blue-600">
-          <FileText className="h-5 w-5" />
-          <span className="text-sm font-normal">Consultation</span>
-        </div>
-      );
-    }
-
     switch (status) {
       case ReportStatus.PUBLISHED:
         return (
-          <div className="flex items-center space-x-2 text-green-600">
-            <FileText className="h-5 w-5" />
-            <span className="text-sm font-normal">Publié</span>
+          <div className="flex items-center space-x-2">
+            <FileText className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
+              {t('assessment:status.published')}
+            </span>
           </div>
         );
       case ReportStatus.DRAFT:
         return (
-          <div className="flex items-center space-x-2 text-orange-600">
-            <FileText className="h-5 w-5" />
-            <span className="text-sm font-normal">Brouillon</span>
+          <div className="flex items-center space-x-2">
+            <FileText className="h-4 w-4 text-orange-600" />
+            <span className="text-sm font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded">
+              {t('assessment:status.draft')}
+            </span>
           </div>
         );
       case ReportStatus.NONE:
       default:
         return (
-          <div className="flex items-center space-x-2 text-blue-600">
-            <FileText className="h-5 w-5" />
-            <span className="text-sm font-normal">Nouveau</span>
+          <div className="flex items-center space-x-2">
+            <FileText className="h-4 w-4 text-gray-600" />
+            <span className="text-sm font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">
+              {t('assessment:status.none')}
+            </span>
           </div>
         );
     }
