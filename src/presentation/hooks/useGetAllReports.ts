@@ -1,23 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { DIContainer } from '@/infrastructure/di/Container';
-import { supabase } from '@/lib/supabase';
-
-// Create a Supabase-based container for production
-const createSupabaseContainer = (): DIContainer => {
-  return new DIContainer({
-    useSupabase: true,
-    supabaseClient: supabase
-  });
-};
-
-const container = createSupabaseContainer();
+import { useContainer } from '@/infrastructure/di/ContainerContext';
 
 export function useGetAllReports() {
-  const getAllReportsUseCase = container.getGetAllReportsUseCase();
+  const container = useContainer();
+  const useCase = container.getGetAllReportsUseCase();
 
   return useQuery({
     queryKey: ['allReports'],
-    queryFn: () => getAllReportsUseCase.execute(),
+    queryFn: () => useCase.execute({}),
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 1,
   });

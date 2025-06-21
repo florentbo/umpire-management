@@ -41,6 +41,14 @@ export class CsvMatchRepository implements MatchRepository {
     return match ? this.mapToMatchInfo(match) : null;
   }
 
+  async findByIds(matchIds: MatchId[]): Promise<MatchInfo[]> {
+    const matches = await loadCsvMatches();
+    const idSet = new Set(matchIds.map(id => id.value));
+    return matches
+      .filter(match => idSet.has(match.id))
+      .map(match => this.mapToMatchInfo(match));
+  }
+
   private mapToMatchInfo(csvMatch: Match): MatchInfo {
     return {
       id: { value: csvMatch.id },

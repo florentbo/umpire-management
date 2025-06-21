@@ -2,6 +2,7 @@ import { RouterProvider, createRouter } from '@tanstack/react-router';
 // import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
 import { routeTree } from './routeTree.gen';
+import { ContainerProvider } from '@/infrastructure/di/ContainerContext';
 
 // Create a new router instance
 const router = createRouter({ routeTree });
@@ -17,10 +18,10 @@ declare module '@tanstack/react-router' {
 
 function App() {
   return (
-    <>
+    <ContainerProvider>
       <RouterProvider router={router} />
       <Toaster />
-    </>
+    </ContainerProvider>
   );
 }
 

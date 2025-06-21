@@ -1,18 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { DIContainer } from '@/infrastructure/di/Container';
-import { supabase } from '@/lib/supabase';
-
-// Create a Supabase-based container for production
-const createSupabaseContainer = (): DIContainer => {
-  return new DIContainer({
-    useSupabase: true,
-    supabaseClient: supabase
-  });
-};
-
-const container = createSupabaseContainer();
+import { useContainer } from '@/infrastructure/di/ContainerContext';
 
 export function useGetManagerMatchesWithStatus(managerId: string) {
+  const container = useContainer();
   const useCase = container.getGetManagerMatchesWithStatusUseCase();
 
   return useQuery({

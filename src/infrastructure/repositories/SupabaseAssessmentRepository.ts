@@ -146,6 +146,18 @@ export class SupabaseAssessmentRepository implements AssessmentRepository {
     return this.mapToAssessment(result);
   }
 
+  async findPublishedByAssessor(assessorId: string): Promise<Assessment[]> {
+    const { data, error } = await this.supabase
+      .from('assessments')
+      .select('*')
+      .eq('assessor_id', assessorId)
+      .eq('status', 'PUBLISHED');
+
+    if (error) throw new Error(`Failed to find published assessments: ${error.message}`);
+    if (!data) return [];
+    return data.map((item: any) => this.mapToAssessment(item));
+  }
+
   private mapToAssessment(data: any): Assessment {
     return new Assessment(
       { value: data.id },

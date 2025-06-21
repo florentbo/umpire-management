@@ -1,6 +1,11 @@
 import { Assessment, AssessmentId, MatchId } from '../entities/Assessment';
 import { MatchReport } from '../entities/MatchReport';
 
+export interface AssessedUmpire {
+  id: string;
+  name: string;
+}
+
 export interface AssessmentRepository {
   // Core CRUD operations
   saveAsDraft(assessment: Assessment): Promise<Assessment>;
@@ -12,6 +17,13 @@ export interface AssessmentRepository {
   // Query operations used by use cases
   findByMatchIds(matchIds: MatchId[]): Promise<Assessment[]>;
   findDraftByMatchAndAssessor(matchId: string, assessorId: string): Promise<Assessment | null>;
+
+  /**
+   * Returns all published assessments for a given assessor (manager).
+   * @param assessorId The ID of the manager/assessor.
+   * @returns A Promise of an array of published Assessment domain objects.
+   */
+  findPublishedByAssessor(assessorId: string): Promise<Assessment[]>;
 }
 
 export interface MatchReportRepository {

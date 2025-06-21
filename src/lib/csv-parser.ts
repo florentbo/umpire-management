@@ -34,4 +34,14 @@ export function parseMatchesFromCSV(csvContent: string): Match[] {
       division
     };
   });
+}
+
+export function parseUmpiresFromCSV(csvContent: string): { name: string; id: string }[] {
+  const lines = csvContent.split('\n').filter(line => line.trim());
+  // Remove header if present
+  const dataLines = lines[0].toLowerCase().startsWith('name') ? lines.slice(1) : lines;
+  return dataLines.map(line => {
+    const [name, id] = line.split(',');
+    return { name: name.trim(), id: id.trim() };
+  });
 } 

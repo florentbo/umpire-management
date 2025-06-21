@@ -8,6 +8,8 @@ import { MatchRepository } from '@/domain/repositories/MatchRepository';
 import { SupabaseAssessmentRepository } from '../repositories/SupabaseAssessmentRepository';
 import { SupabaseMatchReportRepository } from '../repositories/SupabaseMatchReportRepository';
 import { CsvMatchRepository } from '../repositories/CsvMatchRepository';
+import { AssessmentRepository } from '@/domain/repositories/AssessmentRepository';
+import { supabase } from '@/lib/supabase';
 
 export interface Container {
   getAssessmentService(): AssessmentService;
@@ -17,6 +19,7 @@ export interface Container {
   getGetAllReportsUseCase(): GetAllReportsUseCase;
   getMatchRepository(): MatchRepository;
   getGetManagerMatchesWithStatusUseCase(): GetManagerMatchesWithStatusUseCase;
+  getAssessmentRepository(): AssessmentRepository;
 }
 
 export class DIContainer implements Container {
@@ -27,6 +30,7 @@ export class DIContainer implements Container {
   private getAllReportsUseCase?: GetAllReportsUseCase;
   private matchRepository?: MatchRepository;
   private getManagerMatchesWithStatusUseCase?: GetManagerMatchesWithStatusUseCase;
+  private assessmentRepository?: AssessmentRepository;
 
   constructor(private readonly config: { useSupabase: boolean; supabaseClient?: any; restClient?: any }) {}
 
@@ -90,5 +94,12 @@ export class DIContainer implements Container {
       );
     }
     return this.getManagerMatchesWithStatusUseCase;
+  }
+
+  getAssessmentRepository(): AssessmentRepository {
+    if (!this.assessmentRepository) {
+      this.assessmentRepository = new SupabaseAssessmentRepository(supabase);
+    }
+    return this.assessmentRepository;
   }
 }

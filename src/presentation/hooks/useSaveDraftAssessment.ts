@@ -1,21 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { DIContainer } from '../../infrastructure/di/Container';
-import { supabase } from '../../lib/supabase';
+import { useContainer } from '@/infrastructure/di/ContainerContext';
 import { toast } from 'sonner';
-import { SaveDraftAssessmentUseCase, SaveDraftAssessmentRequest, SaveDraftAssessmentResponse } from '../../application/usecases/SaveDraftAssessmentUseCase';
-
-// Create a Supabase-based container for production
-const createSupabaseContainer = (): DIContainer => {
-  return new DIContainer({
-    useSupabase: true,
-    supabaseClient: supabase
-  });
-};
-
-const container = createSupabaseContainer();
+import { SaveDraftAssessmentUseCase, SaveDraftAssessmentRequest, SaveDraftAssessmentResponse } from '@/application/usecases/SaveDraftAssessmentUseCase';
 
 export function useSaveDraftAssessment() {
   const queryClient = useQueryClient();
+  const container = useContainer();
   const assessmentService = container.getAssessmentService();
   const saveDraftUseCase = new SaveDraftAssessmentUseCase(assessmentService);
 

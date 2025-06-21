@@ -1,19 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { DIContainer } from '../../infrastructure/di/Container';
-import { supabase } from '../../lib/supabase';
-import { LoadDraftAssessmentUseCase } from '../../application/usecases/LoadDraftAssessmentUseCase';
-
-// Create a Supabase-based container for production
-const createSupabaseContainer = (): DIContainer => {
-  return new DIContainer({
-    useSupabase: true,
-    supabaseClient: supabase
-  });
-};
-
-const container = createSupabaseContainer();
+import { useContainer } from '@/infrastructure/di/ContainerContext';
+import { LoadDraftAssessmentUseCase } from '@/application/usecases/LoadDraftAssessmentUseCase';
 
 export function useLoadDraftAssessment(matchId: string, assessorId: string) {
+  const container = useContainer();
   const assessmentService = container.getAssessmentService();
   const loadDraftUseCase = new LoadDraftAssessmentUseCase(assessmentService);
 

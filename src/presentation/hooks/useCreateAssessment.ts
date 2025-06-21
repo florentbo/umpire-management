@@ -1,23 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { DIContainer } from '../../infrastructure/di/Container';
-import { supabase } from '../../lib/supabase';
+import { useContainer } from '@/infrastructure/di/ContainerContext';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { CreateAssessmentRequest, CreateAssessmentResponse } from '@/application/usecases/CreateAssessmentUseCase';
 
-// Create a Supabase-based container for production
-const createSupabaseContainer = (): DIContainer => {
-  return new DIContainer({
-    useSupabase: true,
-    supabaseClient: supabase
-  });
-};
-
-const container = createSupabaseContainer();
-
 export function useCreateAssessment() {
   const { t } = useTranslation('common');
   const queryClient = useQueryClient();
+  const container = useContainer();
   const createAssessmentUseCase = container.getCreateAssessmentUseCase();
 
   return useMutation<CreateAssessmentResponse, Error, CreateAssessmentRequest>({
