@@ -31,3 +31,5 @@ dist-ssr
 .netlify
 
 src/gen/
+
+.tanstack

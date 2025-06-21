@@ -6,6 +6,8 @@ import { ReportsTable } from './ReportsTable';
 import { UmpireFilter } from './UmpireFilter';
 import { ReportSummaryAggregate } from '@/domain/entities/ReportSummary';
 import { Assessment } from '@/domain/entities/Assessment';
+import { useContainer } from '@/infrastructure/di/ContainerContext';
+import { AssessmentQueryRepositoryImpl } from '@/application/repositories/AssessmentQueryRepository';
 
 interface AllReportsViewProps {
   loadingAllReports: boolean;
@@ -23,6 +25,24 @@ export const AllReportsView: React.FC<AllReportsViewProps> = ({
   currentUserId
 }) => {
   const [filteredAssessments, setFilteredAssessments] = useState<Assessment[] | null>(null);
+
+  // Use DI container from context
+  const container = useContainer();
+  const assessmentRepo = container.getAssessmentRepository();
+  const matchRepo = container.getMatchRepository();
+  const queryRepo = new AssessmentQueryRepositoryImpl(assessmentRepo, matchRepo);
+
+  // Custom function to get all published assessments by umpire (not just current manager's)
+  const getAllPublishedAssessmentsByUmpire = async (umpireId: string) => {
+    // This should get ALL published assessments for this umpire, regardless of who assessed them
+    return queryRepo.findAssessmentsByUmpire(umpireId);
+  };
+
+  // Custom function to get all umpires who have published reports
+  const getAllUmpiresWithPublishedReports = async (searchTerm: string) => {
+    // This should get ALL umpires who have published reports, not just those assessed by current manager
+    return queryRepo.findAssessedUmpiresByName(searchTerm);
+  };
 
   // Filter reports by selected assessments
   const filteredReports = useMemo(() => {
@@ -57,6 +77,8 @@ export const AllReportsView: React.FC<AllReportsViewProps> = ({
         <UmpireFilter 
           currentUserId={currentUserId}
           onUmpireFilterChange={handleUmpireFilterChange}
+          customQueryFunction={getAllPublishedAssessmentsByUmpire}
+          customFetchUmpires={getAllUmpiresWithPublishedReports}
         />
 
         {loadingAllReports ? (

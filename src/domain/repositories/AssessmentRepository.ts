@@ -24,6 +24,12 @@ export interface AssessmentRepository {
    * @returns A Promise of an array of published Assessment domain objects.
    */
   findPublishedByAssessor(assessorId: string): Promise<Assessment[]>;
+
+  /**
+   * Returns all published assessments regardless of who assessed them.
+   * @returns A Promise of an array of published Assessment domain objects.
+   */
+  findPublished(): Promise<Assessment[]>;
 }
 
 export interface MatchReportRepository {

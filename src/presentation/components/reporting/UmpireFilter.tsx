@@ -8,11 +8,17 @@ import { AssessmentQueryRepositoryImpl } from '@/application/repositories/Assess
 interface UmpireFilterProps {
   currentUserId: string;
   onUmpireFilterChange: (assessments: Assessment[] | null) => void;
+  // Custom query function to use instead of the default
+  customQueryFunction?: (managerId: string, umpireId: string) => Promise<Assessment[]> | ((umpireId: string) => Promise<Assessment[]>);
+  // Custom fetch umpires function
+  customFetchUmpires?: (searchTerm: string) => Promise<{ name: string; id: string }[]>;
 }
 
 export const UmpireFilter: React.FC<UmpireFilterProps> = ({
   currentUserId,
-  onUmpireFilterChange
+  onUmpireFilterChange,
+  customQueryFunction,
+  customFetchUmpires
 }) => {
   const [selectedUmpire, setSelectedUmpire] = useState<{ name: string; id: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -25,6 +31,12 @@ export const UmpireFilter: React.FC<UmpireFilterProps> = ({
 
   const fetchUmpires = async (searchTerm: string) => {
     if (!currentUserId) return [];
+    
+    // Use custom function if provided, otherwise use default
+    if (customFetchUmpires) {
+      return customFetchUmpires(searchTerm);
+    }
+    
     return queryRepo.findAssessedUmpiresByManagerAndName(currentUserId, searchTerm);
   };
 
@@ -33,8 +45,23 @@ export const UmpireFilter: React.FC<UmpireFilterProps> = ({
     setLoading(true);
     
     try {
-      // Get assessments for this umpire
-      const assessments = await queryRepo.findAssessmentsByManagerAndUmpire(currentUserId, umpire.id);
+      let assessments: Assessment[];
+      
+      // Use custom query function if provided, otherwise use default
+      if (customQueryFunction) {
+        // Check if the custom function expects one or two parameters
+        if (customQueryFunction.length === 2) {
+          // Function expects (managerId, umpireId)
+          assessments = await (customQueryFunction as (managerId: string, umpireId: string) => Promise<Assessment[]>)(currentUserId, umpire.id);
+        } else {
+          // Function expects only (umpireId)
+          assessments = await (customQueryFunction as (umpireId: string) => Promise<Assessment[]>)(umpire.id);
+        }
+      } else {
+        // Use default function
+        assessments = await queryRepo.findAssessmentsByManagerAndUmpire(currentUserId, umpire.id);
+      }
+      
       onUmpireFilterChange(assessments);
     } catch (error) {
       console.error('Error fetching assessments for umpire:', error);

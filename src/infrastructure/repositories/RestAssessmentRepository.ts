@@ -94,6 +94,13 @@ export class RestAssessmentRepository implements AssessmentRepository {
     return response.items.map((item: any) => this.mapToAssessment(item));
   }
 
+  async findPublished(): Promise<Assessment[]> {
+    const response = await this.restClient.get(
+      `${this.baseUrl}/assessments?status=PUBLISHED`
+    );
+    return response.items.map((item: any) => this.mapToAssessment(item));
+  }
+
   private buildAssessmentPayload(assessment: Assessment, status: 'DRAFT' | 'PUBLISHED') {
     return {
       matchId: assessment.matchId.value,
