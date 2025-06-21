@@ -3,7 +3,6 @@ import { ManagerMatchCard } from './ManagerMatchCard';
 import { ReportStatusFilter } from './ReportStatusFilter';
 import { MatchWithReportStatus, ReportStatus } from '@/domain/entities/MatchReportStatus';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ClipboardList } from 'lucide-react';
 
 interface MyMatchesViewProps {
