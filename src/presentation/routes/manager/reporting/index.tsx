@@ -10,6 +10,7 @@ import { AllReportsView } from '@/presentation/components/reporting/AllReportsVi
 import { AssessmentQueryRepositoryImpl } from '@/application/repositories/AssessmentQueryRepository';
 import { useContainer } from '@/infrastructure/di/ContainerContext';
 import { ReportStatus } from '@/domain/entities/MatchReportStatus';
+import { Assessment } from '@/domain/entities/Assessment';
 
 export const Route = createFileRoute('/manager/reporting')({
   beforeLoad: () => {
@@ -28,7 +29,7 @@ function ReportingPage() {
 
   // Add state for selected umpire and filtered assessments
   const [selectedUmpire, setSelectedUmpire] = useState<{ name: string; id: string } | null>(null);
-  const [filteredAssessments, setFilteredAssessments] = useState<any[] | null>(null);
+  const [filteredAssessments, setFilteredAssessments] = useState<Assessment[] | null>(null);
   const [loadingAssessments, setLoadingAssessments] = useState(false);
 
   // Use DI container from context
@@ -60,7 +61,7 @@ function ReportingPage() {
     // Fetch all published assessments for this manager
     const allAssessments = await assessmentRepo.findPublishedByAssessor(user.id);
     // Filter by umpire id (either as umpireA or umpireB)
-    const filtered = allAssessments.filter((a: any) =>
+    const filtered = allAssessments.filter((a: Assessment) =>
       a.umpireA?.umpireId?.value === umpire.id || a.umpireB?.umpireId?.value === umpire.id
     );
     setFilteredAssessments(filtered);

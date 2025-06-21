@@ -1,12 +1,13 @@
-import React from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClipboardList } from 'lucide-react';
 import { ReportsTable } from './ReportsTable';
+import { ReportSummaryAggregate } from '@/domain/entities/ReportSummary';
 
 interface AllReportsViewProps {
   loadingAllReports: boolean;
-  allReportsData: any;
-  sortedReports: any[];
+  allReportsData: { reports: ReportSummaryAggregate[] } | undefined;
+  sortedReports: ReportSummaryAggregate[];
   currentAssessorId: string;
 }
 
@@ -21,32 +22,39 @@ export const AllReportsView: React.FC<AllReportsViewProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <ClipboardList className="h-5 w-5" />
-          <span>Tous les Rapports Publiés</span>
+          <span>Tous les rapports</span>
         </CardTitle>
         <CardDescription>
-          Vue synthétique de tous les rapports d'évaluation publiés
+          Consultez tous les rapports d'évaluation publiés
         </CardDescription>
       </CardHeader>
-      <CardContent className="w-full p-0">
+      <CardContent>
         {loadingAllReports ? (
-          <div className="p-6">
-            <div className="space-y-4 w-full">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse w-full" />
-              ))}
-            </div>
+          <div className="space-y-4 w-full">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-24 bg-gray-100 rounded-lg animate-pulse w-full" />
+            ))}
           </div>
         ) : !allReportsData?.reports || allReportsData.reports.length === 0 ? (
           <div className="text-center py-12 w-full">
             <ClipboardList className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg">Aucun rapport publié</p>
+            <p className="text-gray-500 text-lg">Aucun rapport trouvé</p>
             <p className="text-sm text-gray-400 mt-2">Les rapports publiés apparaîtront ici</p>
           </div>
         ) : (
-          <ReportsTable
-            reports={sortedReports}
-            currentAssessorId={currentAssessorId}
-          />
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Tous les Rapports</h2>
+              <div className="text-sm text-gray-500">
+                {sortedReports.length} rapport{sortedReports.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            <ReportsTable 
+              reports={sortedReports} 
+              currentAssessorId={currentAssessorId}
+            />
+          </div>
         )}
       </CardContent>
     </Card>

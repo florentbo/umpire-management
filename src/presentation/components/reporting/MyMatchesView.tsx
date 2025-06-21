@@ -1,20 +1,20 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { FileText, ClipboardList, Filter } from 'lucide-react';
+import * as React from 'react';
 import { ManagerMatchCard } from './ManagerMatchCard';
 import { ReportStatusFilter } from './ReportStatusFilter';
-import { ReportStatus } from '@/domain/entities/MatchReportStatus';
+import { MatchWithReportStatus, ReportStatus } from '@/domain/entities/MatchReportStatus';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ClipboardList } from 'lucide-react';
 
 interface MyMatchesViewProps {
   loadingMyMatches: boolean;
-  myMatchesData: any;
+  myMatchesData: { matches: MatchWithReportStatus[] } | undefined;
   statusFilter: ReportStatus | 'ALL';
-  setStatusFilter: (status: ReportStatus | 'ALL') => void;
-  sortedAndFilteredMatches: any[];
+  setStatusFilter: (filter: ReportStatus | 'ALL') => void;
+  sortedAndFilteredMatches: MatchWithReportStatus[];
   groupedMatches: {
-    priorityMatches: any[];
-    publishedMatches: any[];
+    priorityMatches: MatchWithReportStatus[];
+    publishedMatches: MatchWithReportStatus[];
   };
   getStatusCount: (status: ReportStatus | 'ALL') => number;
 }
@@ -30,17 +30,7 @@ export const MyMatchesView: React.FC<MyMatchesViewProps> = ({
 }) => {
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <FileText className="h-5 w-5" />
-          <span>Mes matches</span>
-        </CardTitle>
-        <CardDescription>
-          Vos matches assignés avec le statut des rapports d'évaluation
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="w-full">
-        {/* Status Filter */}
+      <div className="p-6">
         <div className="mb-6">
           <ReportStatusFilter
             statusFilter={statusFilter}
@@ -63,50 +53,38 @@ export const MyMatchesView: React.FC<MyMatchesViewProps> = ({
         ) : (() => {
           if (statusFilter !== 'ALL') {
             // If filtering by specific status, show normal filtered list
-            return sortedAndFilteredMatches.length === 0 ? (
-              <div className="text-center py-12 w-full">
-                <Filter className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500 text-lg">Aucun match avec le statut "{getStatusCount(statusFilter)}"</p>
-                <p className="text-sm text-gray-400 mt-2">Essayez de changer le filtre pour voir d'autres matches</p>
-              </div>
-            ) : (
+            return (
               <div className="space-y-4 w-full">
-                {sortedAndFilteredMatches.map(matchWithStatus => (
-                  <ManagerMatchCard key={matchWithStatus.match.id.value} matchWithStatus={matchWithStatus} />
+                {sortedAndFilteredMatches.map((match: MatchWithReportStatus) => (
+                  <ManagerMatchCard key={match.match.id.value} matchWithStatus={match} />
                 ))}
               </div>
             );
-          }
-          // Show grouped view when "ALL" is selected
-          return (
-            <div className="space-y-8 w-full">
-              {/* Priority Matches (NONE and DRAFT) */}
-              {groupedMatches.priorityMatches.length > 0 && (
-                <div className="space-y-4 w-full">
-                  <div className="flex items-center space-x-2">
-                    <div className="h-px bg-orange-200 flex-1"></div>
-                    <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">
-                      Rapports à rédiger ({groupedMatches.priorityMatches.length})
-                    </Badge>
-                    <div className="h-px bg-orange-200 flex-1"></div>
+          } else {
+            // If showing all, group by priority
+            return (
+              <div className="space-y-8 w-full">
+                {/* Priority Matches (NONE/DRAFT) */}
+                {groupedMatches.priorityMatches.length > 0 && (
+                  <div className="space-y-4 w-full">
+                    {groupedMatches.priorityMatches.map((match: MatchWithReportStatus) => (
+                      <ManagerMatchCard key={match.match.id.value} matchWithStatus={match} />
+                    ))}
                   </div>
-                  {groupedMatches.priorityMatches.map(matchWithStatus => (
-                    <ManagerMatchCard key={matchWithStatus.match.id.value} matchWithStatus={matchWithStatus} />
-                  ))}
-                </div>
-              )}
-              {/* Empty state if no matches at all */}
-              {groupedMatches.priorityMatches.length === 0 && groupedMatches.publishedMatches.length === 0 && (
-                <div className="text-center py-12 w-full">
-                  <ClipboardList className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500 text-lg">Aucun match assigné</p>
-                  <p className="text-sm text-gray-400 mt-2">Les matches qui vous sont assignés apparaîtront ici</p>
-                </div>
-              )}
-            </div>
-          );
+                )}
+                {/* Empty state if no matches at all */}
+                {groupedMatches.priorityMatches.length === 0 && groupedMatches.publishedMatches.length === 0 && (
+                  <div className="text-center py-12 w-full">
+                    <ClipboardList className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500 text-lg">Aucun match assigné</p>
+                    <p className="text-sm text-gray-400 mt-2">Les matches qui vous sont assignés apparaîtront ici</p>
+                  </div>
+                )}
+              </div>
+            );
+          }
         })()}
-      </CardContent>
+      </div>
     </Card>
   );
 };

@@ -1,9 +1,9 @@
 import { useGetManagerMatchesWithStatus } from '@/presentation/hooks/useGetManagerMatchesWithStatus';
 import { useGetAllPublishedReports } from '@/presentation/hooks/useGetAllPublishedReports';
 import { useMemo, useState } from 'react';
-import { MatchSortingService } from '@/domain/services/MatchSortingService';
 import { ReportSortingService } from '@/domain/services/ReportSortingService';
-import { ReportStatus } from '@/domain/entities/MatchReportStatus';
+import { ReportStatus, MatchWithReportStatus } from '@/domain/entities/MatchReportStatus';
+import { ReportSummaryAggregate } from '@/domain/entities/ReportSummary';
 
 export interface PublishedReportsFilter {
   assessorId?: string;
@@ -13,14 +13,14 @@ export interface PublishedReportsFilter {
 export interface ManagerMatchesViewModel {
   loadingMyMatches: boolean;
   loadingAllReports: boolean;
-  sortedAndFilteredMatches: any[];
+  sortedAndFilteredMatches: MatchWithReportStatus[];
   groupedMatches: {
-    priorityMatches: any[];
-    publishedMatches: any[];
+    priorityMatches: MatchWithReportStatus[];
+    publishedMatches: MatchWithReportStatus[];
   };
-  sortedReports: any[];
-  myMatchesData: any;
-  allReportsData: any;
+  sortedReports: ReportSummaryAggregate[];
+  myMatchesData: { matches: MatchWithReportStatus[] } | undefined;
+  allReportsData: { reports: ReportSummaryAggregate[] } | undefined;
   getStatusCount: (status: ReportStatus | 'ALL') => number;
   publishedReportsFilter: PublishedReportsFilter;
   setPublishedReportsFilter: (filter: PublishedReportsFilter) => void;
@@ -36,30 +36,50 @@ export function useManagerMatchesViewModel(
   const { data: myMatchesData, isLoading: loadingMyMatches } = useGetManagerMatchesWithStatus(userId);
   const { data: allReportsData, isLoading: loadingAllReports } = useGetAllPublishedReports(publishedReportsFilter);
 
-  const matchSortingService = useMemo(() => new MatchSortingService(), []);
-  const reportSortingService = useMemo(() => new ReportSortingService(), []);
-
+  // Sorting and grouping logic for MatchWithReportStatus
   const { sortedAndFilteredMatches, groupedMatches } = useMemo(() => {
     if (!myMatchesData?.matches) {
       return { sortedAndFilteredMatches: [], groupedMatches: { priorityMatches: [], publishedMatches: [] } };
     }
-    const sortedAndFiltered = matchSortingService.getSortedAndFilteredMatches(
-      myMatchesData.matches,
-      statusFilter
-    );
-    const grouped = matchSortingService.groupMatchesByPriority(myMatchesData.matches);
-    return { sortedAndFilteredMatches: sortedAndFiltered, groupedMatches: grouped };
-  }, [myMatchesData?.matches, statusFilter, matchSortingService]);
+    // Filter and sort
+    const filtered = statusFilter === 'ALL'
+      ? myMatchesData.matches
+      : myMatchesData.matches.filter(match => match.reportStatus === statusFilter);
+    // Sort by date (earliest first for NONE/DRAFT, latest first for PUBLISHED)
+    const sortedAndFilteredMatches = [...filtered].sort((a, b) => {
+      const dateA = new Date(a.match.date + ' ' + a.match.time);
+      const dateB = new Date(b.match.date + ' ' + b.match.time);
+      if (a.reportStatus === ReportStatus.PUBLISHED && b.reportStatus === ReportStatus.PUBLISHED) {
+        return dateB.getTime() - dateA.getTime();
+      }
+      return dateA.getTime() - dateB.getTime();
+    });
+    // Group
+    const priorityMatches = myMatchesData.matches.filter(m => m.reportStatus === ReportStatus.NONE || m.reportStatus === ReportStatus.DRAFT);
+    const publishedMatches = myMatchesData.matches.filter(m => m.reportStatus === ReportStatus.PUBLISHED);
+    return { sortedAndFilteredMatches, groupedMatches: { priorityMatches, publishedMatches } };
+  }, [myMatchesData?.matches, statusFilter]);
 
+  const reportSortingService = useMemo(() => new ReportSortingService(), []);
   const sortedReports = useMemo(() => {
     if (!allReportsData?.reports) return [];
-    return reportSortingService.sortReports(allReportsData.reports);
+    // Convert ReportSummaryAggregate to ReportForSorting for sorting, then convert back
+    const reportsForSorting = allReportsData.reports.map((report: ReportSummaryAggregate) => ({
+      matchInfo: {
+        date: report.matchInfo.date,
+        time: report.matchInfo.time,
+      },
+      submittedAt: report.submittedAt,
+      originalReport: report
+    }));
+    const sortedForSorting = reportSortingService.sortReports(reportsForSorting);
+    return sortedForSorting.map((item: any) => item.originalReport);
   }, [allReportsData?.reports, reportSortingService]);
 
   const getStatusCount = (status: ReportStatus | 'ALL') => {
     if (!myMatchesData?.matches) return 0;
     if (status === 'ALL') return myMatchesData.matches.length;
-    return myMatchesData.matches.filter(match => match.reportStatus === status).length;
+    return myMatchesData.matches.filter((match: MatchWithReportStatus) => match.reportStatus === status).length;
   };
 
   return {
