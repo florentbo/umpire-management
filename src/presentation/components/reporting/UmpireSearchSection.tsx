@@ -1,27 +1,57 @@
-import React from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { UmpireAutocomplete } from '../UmpireAutocomplete';
 import { Assessment } from '@/domain/entities/Assessment';
+import { useContainer } from '@/infrastructure/di/ContainerContext';
+import { AssessmentQueryRepositoryImpl } from '@/application/repositories/AssessmentQueryRepository';
 
 interface UmpireSearchSectionProps {
-  fetchUmpires: (searchTerm: string) => Promise<{ name: string; id: string }[]>;
-  onUmpireSelect: (umpire: { name: string; id: string }) => void;
-  selectedUmpire: { name: string; id: string } | null;
-  filteredAssessments: Assessment[] | null;
-  loadingAssessments: boolean;
+  currentUserId: string;
 }
 
 export const UmpireSearchSection: React.FC<UmpireSearchSectionProps> = ({
-  fetchUmpires,
-  onUmpireSelect,
-  selectedUmpire,
-  filteredAssessments,
-  loadingAssessments
+  currentUserId
 }) => {
+  const [selectedUmpire, setSelectedUmpire] = useState<{ name: string; id: string } | null>(null);
+  const [filteredAssessments, setFilteredAssessments] = useState<Assessment[] | null>(null);
+  const [loadingAssessments, setLoadingAssessments] = useState(false);
+
+  // Use DI container from context
+  const container = useContainer();
+  const assessmentRepo = container.getAssessmentRepository();
+  const matchRepo = container.getMatchRepository();
+  const queryRepo = new AssessmentQueryRepositoryImpl(assessmentRepo, matchRepo);
+
+  const fetchUmpires = async (searchTerm: string) => {
+    if (!currentUserId) return [];
+    return queryRepo.findAssessedUmpiresByManagerAndName(currentUserId, searchTerm);
+  };
+
+  const handleUmpireSelect = async (umpire: { name: string; id: string }) => {
+    if (!currentUserId) return;
+    setSelectedUmpire(umpire);
+    setLoadingAssessments(true);
+    try {
+      // Fetch all published assessments for this manager
+      const allAssessments = await assessmentRepo.findPublishedByAssessor(currentUserId);
+      // Filter by umpire id (either as umpireA or umpireB)
+      const filtered = allAssessments.filter((a: Assessment) =>
+        a.umpireA?.umpireId?.value === umpire.id || a.umpireB?.umpireId?.value === umpire.id
+      );
+      setFilteredAssessments(filtered);
+    } catch (error) {
+      console.error('Error fetching assessments:', error);
+      setFilteredAssessments([]);
+    } finally {
+      setLoadingAssessments(false);
+    }
+  };
+
   return (
     <>
       {/* Umpire Autocomplete */}
       <div className="mb-6">
-        <UmpireAutocomplete fetchUmpires={fetchUmpires} onSelect={onUmpireSelect} />
+        <UmpireAutocomplete fetchUmpires={fetchUmpires} onSelect={handleUmpireSelect} />
       </div>
 
       {/* Show filtered assessments if an umpire is selected */}
