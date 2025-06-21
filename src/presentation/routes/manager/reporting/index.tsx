@@ -3,7 +3,6 @@ import { Header } from '@/presentation/components/layout/Header';
 import { authService } from '@/lib/auth';
 import { useState } from 'react';
 import { useManagerMatchesViewModel } from '@/presentation/hooks/useManagerMatchesViewModel';
-import { UmpireSearchSection } from '@/presentation/components/reporting/UmpireSearchSection';
 import { ViewToggle } from '@/presentation/components/reporting/ViewToggle';
 import { MyMatchesView } from '@/presentation/components/reporting/MyMatchesView';
 import { AllReportsView } from '@/presentation/components/reporting/AllReportsView';
@@ -40,8 +39,6 @@ function ReportingPage() {
       <Header title="Reporting" />
       <div className="w-full px-4 py-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="w-full max-w-none space-y-8">
-          <UmpireSearchSection currentUserId={user?.id || ''} />
-
           <ViewToggle activeView={activeView} onViewChange={setActiveView} />
 
           {activeView === 'my-matches' ? (
@@ -53,6 +50,7 @@ function ReportingPage() {
               sortedAndFilteredMatches={sortedAndFilteredMatches}
               groupedMatches={groupedMatches}
               getStatusCount={getStatusCount}
+              currentUserId={user?.id || ''}
             />
           ) : (
             <AllReportsView
@@ -60,6 +58,7 @@ function ReportingPage() {
               allReportsData={allReportsData}
               sortedReports={sortedReports}
               currentAssessorId={user?.id || ''}
+              currentUserId={user?.id || ''}
             />
           )}
         </div>

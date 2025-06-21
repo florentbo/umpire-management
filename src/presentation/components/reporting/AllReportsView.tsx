@@ -1,22 +1,47 @@
 import * as React from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClipboardList } from 'lucide-react';
 import { ReportsTable } from './ReportsTable';
+import { UmpireFilter } from './UmpireFilter';
 import { ReportSummaryAggregate } from '@/domain/entities/ReportSummary';
+import { Assessment } from '@/domain/entities/Assessment';
 
 interface AllReportsViewProps {
   loadingAllReports: boolean;
   allReportsData: { reports: ReportSummaryAggregate[] } | undefined;
   sortedReports: ReportSummaryAggregate[];
   currentAssessorId: string;
+  currentUserId: string;
 }
 
 export const AllReportsView: React.FC<AllReportsViewProps> = ({
   loadingAllReports,
   allReportsData,
   sortedReports,
-  currentAssessorId
+  currentAssessorId,
+  currentUserId
 }) => {
+  const [filteredAssessments, setFilteredAssessments] = useState<Assessment[] | null>(null);
+
+  // Filter reports by selected assessments
+  const filteredReports = useMemo(() => {
+    if (!filteredAssessments) {
+      return sortedReports;
+    }
+
+    // Get match IDs from filtered assessments
+    const assessmentMatchIds = new Set(filteredAssessments.map(a => a.matchId.value));
+    
+    return sortedReports.filter(report => 
+      assessmentMatchIds.has(report.matchId)
+    );
+  }, [filteredAssessments, sortedReports]);
+
+  const handleUmpireFilterChange = (assessments: Assessment[] | null) => {
+    setFilteredAssessments(assessments);
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -29,6 +54,11 @@ export const AllReportsView: React.FC<AllReportsViewProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <UmpireFilter 
+          currentUserId={currentUserId}
+          onUmpireFilterChange={handleUmpireFilterChange}
+        />
+
         {loadingAllReports ? (
           <div className="space-y-4 w-full">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -46,14 +76,25 @@ export const AllReportsView: React.FC<AllReportsViewProps> = ({
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-900">Tous les Rapports</h2>
               <div className="text-sm text-gray-500">
-                {sortedReports.length} rapport{sortedReports.length !== 1 ? 's' : ''}
+                {filteredReports.length} rapport{filteredReports.length !== 1 ? 's' : ''}
+                {filteredAssessments && ` (filtré)`}
               </div>
             </div>
 
-            <ReportsTable 
-              reports={sortedReports} 
-              currentAssessorId={currentAssessorId}
-            />
+            {filteredReports.length === 0 ? (
+              <div className="text-center py-12 w-full">
+                <ClipboardList className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <p className="text-gray-500 text-lg">Aucun rapport trouvé</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  {filteredAssessments ? 'Aucun rapport trouvé pour cet arbitre' : 'Les rapports publiés apparaîtront ici'}
+                </p>
+              </div>
+            ) : (
+              <ReportsTable 
+                reports={filteredReports} 
+                currentAssessorId={currentAssessorId}
+              />
+            )}
           </div>
         )}
       </CardContent>
